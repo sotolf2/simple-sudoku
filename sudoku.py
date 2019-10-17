@@ -290,7 +290,7 @@ class SudokuUI(Frame):
                 # First draw the highlight or else the candidates won't be visible
                 if self.highlight != 0 and answer == self.highlight: 
                     self.canvas.create_rectangle(x0, y0, x1, y1, tags="highlights", fill=HLANSWER, outline=HLANSWER)
-                elif self.highlight !=0 and self.highlight in candidates:
+                elif self.highlight !=0 and self.highlight in candidates and answer == 0:
                     self.canvas.create_rectangle(x0, y0, x1, y1, tags="highlights", fill=HLCAND, outline=HLCAND)
                 
                 if answer != 0:
