@@ -22,6 +22,8 @@ So you can use a code like:
 Just copy the code from hodoku for example, or you can copy lines from the sudoku collection files that you can find under
 http://sudocue.net/download.php for example and click the button From clipboard to load the puzzle into simple sudoku.
 
+As another possibility, you can download a file from that site, and open it with the open file button, to have multiple puzzles at once. using the << and >> buttons to load the previous and next puzzle.
+
 For the Program itself if the cursor is red it means you will be entering big numbers, pressing the spacebar will change you over to
 candidate mode, and the program will indicate this by turning your cursor blue. You can move the cursor by using the arrow keys, or
 just clicking the cell with the mouse.
