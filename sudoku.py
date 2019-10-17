@@ -1,5 +1,5 @@
 import argparse
-from tkinter import Tk, Canvas, Frame, Button, BOTH, TOP, BOTTOM, LEFT, RIGHT
+from tkinter import Tk, Canvas, Frame, Button, filedialog, BOTH, TOP, BOTTOM, LEFT, RIGHT
 from textwrap import wrap
 from enum import Enum
 
@@ -122,6 +122,12 @@ class SudokuGame(object):
                 self.start_puzzle[i][j] = 0
         self.start()
                 
+    def load_puzzle(self, file_name, line_number):
+        with open(file_name) as file:
+            puzzles = [line.strip() for line in file]
+            self.from_string(puzzles[line_number])
+
+
     def from_string(self, puzzle_string):
         self.start_puzzle = SudokuBoard(puzzle_string).board
         self.start()
@@ -191,6 +197,8 @@ class SudokuUI(Frame):
         self.row, self.col = 0, 0
         self.mode = Mode.solution
         self.highlight = 0
+        self.puzzle_num = 0
+        self.file_name = ""
 
         self.__initUI()
 
@@ -210,6 +218,12 @@ class SudokuUI(Frame):
         from_clip.grid(row=0, column=3)
         calculate_candidates = Button(self.buttons, text="Calculate candidates", command=self.__calculate_candidates)
         calculate_candidates.grid(row=0, column=4)
+        open_file = Button(self.buttons, text="Open file", command=self.__from_file)
+        open_file.grid(row=0, column=5)
+        previous_puzzle = Button(self.buttons, text="<<", command=self.__previous_puzzle)
+        previous_puzzle.grid(row=0, column=6)
+        next_puzzle = Button(self.buttons, text=">>", command=self.__next_puzzle)
+        next_puzzle.grid(row=0, column=8)
         self.buttons.pack(fill=BOTH, side=BOTTOM)
 
         self.__draw_grid()
@@ -232,6 +246,23 @@ class SudokuUI(Frame):
         self.canvas.bind("<F7>", self.__toggle_highlight)
         self.canvas.bind("<F8>", self.__toggle_highlight)
         self.canvas.bind("<F9>", self.__toggle_highlight)
+
+    def __from_file(self):
+        self.file_name = filedialog.askopenfilename(title="Open puzzle file")
+        self.puzzle_num = 0
+        self.game.load_puzzle(self.file_name, self.puzzle_num)
+        self.__draw_puzzle()
+
+    def __previous_puzzle(self):
+        if self.puzzle_num != 0:
+            self.puzzle_num -= 1
+        self.game.load_puzzle(self.file_name, self.puzzle_num)
+        self.__draw_puzzle()
+
+    def __next_puzzle(self):
+        self.puzzle_num += 1
+        self.game.load_puzzle(self.file_name, self.puzzle_num)
+        self.__draw_puzzle()
     
     def __calculate_candidates(self):
         for row in range(9):
