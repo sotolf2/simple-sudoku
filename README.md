@@ -1,6 +1,8 @@
 # simple-sudoku
 A simple python tkinter sudoku program
 
+![screenshot](https://raw.githubusercontent.com/sotolf2/simple-sudoku/master/Skjermbilde.PNG)
+
 ## What is this
 
 Basically I've been tinkering around with python, but never really made anything worth thinking about. I've been into solving sudoku
