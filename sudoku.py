@@ -1,7 +1,8 @@
-import argparse
+import random
 from tkinter import Tk, Canvas, Frame, Button, filedialog, messagebox, BOTH, TOP, BOTTOM, LEFT, RIGHT
 from textwrap import wrap
 from enum import Enum
+
 
 MARGIN =  20 # Pixels around the board
 SIDE = 50 # Height of each board cell
@@ -127,6 +128,10 @@ class SudokuGame(object):
             puzzles = [line.strip() for line in file]
             self.from_string(puzzles[line_number])
 
+    def load_random_puzzle(self, file_name):
+        with open(file_name) as file:
+            puzzles = [line.strip() for line in file]
+            self.from_string(random.choice(puzzles))
 
     def from_string(self, puzzle_string):
         self.start_puzzle = SudokuBoard(puzzle_string).board
@@ -223,7 +228,9 @@ class SudokuUI(Frame):
         previous_puzzle = Button(self.buttons, text="<<", command=self.__previous_puzzle)
         previous_puzzle.grid(row=0, column=6)
         next_puzzle = Button(self.buttons, text=">>", command=self.__next_puzzle)
-        next_puzzle.grid(row=0, column=8)
+        next_puzzle.grid(row=0, column=7)
+        random_puzzle = Button(self.buttons, text="R", command=self.__random_from_file)
+        random_puzzle.grid(row=0, column=8)
         self.buttons.pack(fill=BOTH, side=BOTTOM)
 
         self.__draw_grid()
@@ -262,6 +269,10 @@ class SudokuUI(Frame):
     def __next_puzzle(self):
         self.puzzle_num += 1
         self.game.load_puzzle(self.file_name, self.puzzle_num)
+        self.__draw_puzzle()
+
+    def __random_from_file(self):
+        self.game.load_random_puzzle(self.file_name)
         self.__draw_puzzle()
     
     def __calculate_candidates(self):
