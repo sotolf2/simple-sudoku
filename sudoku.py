@@ -1,5 +1,5 @@
 import argparse
-from tkinter import Tk, Canvas, Frame, Button, filedialog, BOTH, TOP, BOTTOM, LEFT, RIGHT
+from tkinter import Tk, Canvas, Frame, Button, filedialog, messagebox, BOTH, TOP, BOTTOM, LEFT, RIGHT
 from textwrap import wrap
 from enum import Enum
 
@@ -484,7 +484,8 @@ class SudokuUI(Frame):
             self.__draw_puzzle()
             self.__draw_cursor()
             if self.game.check_win():
-                self.__draw_victory()
+                #self.__draw_victory()
+                messagebox.showinfo("Completed", "Congratulations, you solved the puzzle!")
         elif event.char == " ":
             self.__toggle_mode_candidate()
             self.__draw_cursor()
