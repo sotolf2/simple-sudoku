@@ -102,6 +102,28 @@ class SudokuGame(object):
 
     def get_origin(self, row, col):
         return self.start_puzzle[row][col]
+    
+    def update_candidates(self, row, col):
+        answer = self.puzzle[row][col]
+        buddies = self.__find_buddies(row, col)
+        for r, c in buddies:
+            self.remove_candidate(r, c, answer)
+
+    def __find_buddies(self, row, col):
+        buddies = [] 
+        # Row buddies
+        buddies.extend([(row, c) for c in range(9)])
+        # Column buddies
+        buddies.extend([(r, col) for r in range(9)])
+        # Box buddies
+        box_row = row // 3
+        box_col = col // 3
+        buddies.extend([
+                (r, c)
+                for r in range(box_row * 3, (box_row + 1) * 3)
+                for c in range(box_col * 3, (box_col + 1) * 3)
+        ])
+        return buddies
 
     def current_to_origin(self):
         self.game_over = False
@@ -442,6 +464,7 @@ class SudokuUI(Frame):
         if self.row >= 0 and self.col >= 0 and event.char in "1234567890":
             if self.mode is Mode.solution:
                 self.game.set_cell(self.row, self.col, int(event.char))
+                self.game.update_candidates(self.row, self.col)
             elif self.mode is Mode.candidate:
                 self.game.toggle_candidate(self.row, self.col, int(event.char))
             self.__draw_puzzle()
