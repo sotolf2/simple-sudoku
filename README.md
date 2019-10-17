@@ -20,7 +20,7 @@ So you can use a code like:
     76.......53.896.......1.2..1....248.....8.....296....1..3.2.......751.36.......12
     
 Just copy the code from hodoku for example, or you can copy lines from the sudoku collection files that you can find under
-http://sudocue.net/download.php for example.
+http://sudocue.net/download.php for example and click the button From clipboard to load the puzzle into simple sudoku.
 
 For the Program itself if the cursor is red it means you will be entering big numbers, pressing the spacebar will change you over to
 candidate mode, and the program will indicate this by turning your cursor blue. You can move the cursor by using the arrow keys, or
