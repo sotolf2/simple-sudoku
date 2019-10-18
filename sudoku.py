@@ -1,5 +1,5 @@
 import random
-from tkinter import Tk, Canvas, Frame, Button, filedialog, messagebox, BOTH, TOP, BOTTOM, LEFT, RIGHT
+from tkinter import Tk, Canvas, Frame, Button, Menu, filedialog, messagebox, BOTH, TOP, BOTTOM, LEFT, RIGHT
 from textwrap import wrap
 from enum import Enum
 
@@ -210,27 +210,46 @@ class SudokuUI(Frame):
     def __initUI(self):
         self.parent.title("Simple Sudoku")
         self.pack(fill=BOTH, expand=1)
+
+        # Menubar
+        menubar = Menu(self.parent)
+        filemenu = Menu(menubar, tearoff=0)
+        filemenu.add_command(label="Open", command=self.__from_file)
+        filemenu.add_command(label="Import from clipboard", command=self.__from_clip)
+        menubar.add_cascade(label="File", menu=filemenu)
+        puzzlemenu = Menu(menubar, tearoff=0)
+        puzzlemenu.add_command(label="Reset", command=self.__clear_answers)
+        puzzlemenu.add_command(label="Clear", command=self.__null_board)
+        puzzlemenu.add_command(label="Set Origin", command=self.__to_origin)
+        menubar.add_cascade(label="Puzzle", menu=puzzlemenu)
+        collectionmenu = Menu(menubar, tearoff=0)
+        collectionmenu.add_command(label="Next Puzzle", command=self.__next_puzzle)
+        collectionmenu.add_command(label="Previous Puzzle", command=self.__previous_puzzle)
+        collectionmenu.add_command(label="Random Puzzle", command=self.__random_from_file)
+        menubar.add_cascade(label="Collection", menu=collectionmenu)
+        self.parent.config(menu=menubar)
+
         self.canvas = Canvas(self, width=WIDTH, height=HEIGHT)
         self.canvas.pack(fill=BOTH, side=TOP)
         self.buttons = Frame(self)
-        reset_button = Button(self.buttons, text="Reset", command=self.__clear_answers)
-        reset_button.grid(row=0, column=0)
-        clear_button = Button(self.buttons, text="Clear", command=self.__null_board)
-        clear_button.grid(row=0, column=1)
-        to_origin_button = Button(self.buttons, text="Set Origin", command=self.__to_origin)
-        to_origin_button.grid(row=0, column=2)
-        from_clip = Button(self.buttons, text="From clipboard", command=self.__from_clip)
-        from_clip.grid(row=0, column=3)
+        #reset_button = Button(self.buttons, text="Reset", command=self.__clear_answers)
+        #reset_button.grid(row=0, column=0)
+        #clear_button = Button(self.buttons, text="Clear", command=self.__null_board)
+        #clear_button.grid(row=0, column=1)
+        #to_origin_button = Button(self.buttons, text="Set Origin", command=self.__to_origin)
+        #to_origin_button.grid(row=0, column=2)
+        #from_clip = Button(self.buttons, text="From clipboard", command=self.__from_clip)
+        #from_clip.grid(row=0, column=3)
         calculate_candidates = Button(self.buttons, text="Calculate candidates", command=self.__calculate_candidates)
         calculate_candidates.grid(row=0, column=4)
-        open_file = Button(self.buttons, text="Open file", command=self.__from_file)
-        open_file.grid(row=0, column=5)
+        #open_file = Button(self.buttons, text="Open file", command=self.__from_file)
+        #open_file.grid(row=0, column=5)
         previous_puzzle = Button(self.buttons, text="<<", command=self.__previous_puzzle)
         previous_puzzle.grid(row=0, column=6)
         next_puzzle = Button(self.buttons, text=">>", command=self.__next_puzzle)
         next_puzzle.grid(row=0, column=7)
-        random_puzzle = Button(self.buttons, text="R", command=self.__random_from_file)
-        random_puzzle.grid(row=0, column=8)
+        #random_puzzle = Button(self.buttons, text="R", command=self.__random_from_file)
+        #random_puzzle.grid(row=0, column=8)
         self.buttons.pack(fill=BOTH, side=BOTTOM)
 
         self.__draw_grid()
