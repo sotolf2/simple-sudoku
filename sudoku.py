@@ -53,7 +53,7 @@ class SudokuBoard(object):
             self.rotate90()
         
         # Either don't flip or do flips
-        i = random.randint(0,2)
+        i = random.randint(0,3)
 
         if i == 0:
             self.flip_hor()
