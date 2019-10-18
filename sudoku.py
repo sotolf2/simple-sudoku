@@ -49,6 +49,7 @@ class SudokuGame(object):
 
     def start(self):
         self.game_over = False
+        self.candidates = [[[False for z in range(10)] for x in range(9)] for y in range(9)]
         self.puzzle = []
         for i in range(9):
             self.puzzle.append([])
@@ -232,24 +233,12 @@ class SudokuUI(Frame):
         self.canvas = Canvas(self, width=WIDTH, height=HEIGHT)
         self.canvas.pack(fill=BOTH, side=TOP)
         self.buttons = Frame(self)
-        #reset_button = Button(self.buttons, text="Reset", command=self.__clear_answers)
-        #reset_button.grid(row=0, column=0)
-        #clear_button = Button(self.buttons, text="Clear", command=self.__null_board)
-        #clear_button.grid(row=0, column=1)
-        #to_origin_button = Button(self.buttons, text="Set Origin", command=self.__to_origin)
-        #to_origin_button.grid(row=0, column=2)
-        #from_clip = Button(self.buttons, text="From clipboard", command=self.__from_clip)
-        #from_clip.grid(row=0, column=3)
         calculate_candidates = Button(self.buttons, text="Calculate candidates", command=self.__calculate_candidates)
         calculate_candidates.grid(row=0, column=4)
-        #open_file = Button(self.buttons, text="Open file", command=self.__from_file)
-        #open_file.grid(row=0, column=5)
         previous_puzzle = Button(self.buttons, text="<<", command=self.__previous_puzzle)
         previous_puzzle.grid(row=0, column=6)
         next_puzzle = Button(self.buttons, text=">>", command=self.__next_puzzle)
         next_puzzle.grid(row=0, column=7)
-        #random_puzzle = Button(self.buttons, text="R", command=self.__random_from_file)
-        #random_puzzle.grid(row=0, column=8)
         self.buttons.pack(fill=BOTH, side=BOTTOM)
 
         self.__draw_grid()
