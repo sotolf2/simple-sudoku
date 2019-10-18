@@ -41,6 +41,29 @@ class SudokuBoard(object):
         rows = wrap(puzzle_string, 9)
         rows = [row.replace('.', '0') for row in rows]
         self.board = [ [int(ch) for ch in row] for row in rows ]
+
+    def generate(self, difficulty):
+        file_name = difficulty + ".seed"
+        with open(file_name) as file:
+            puzzles = [line.strip() for line in file]
+            self.__create_board(random.choice(puzzles)) 
+        
+        # Rotate puzzle between 0 to 3 times
+        for i in range(random.randint(0,3)):
+            self.rotate90()
+        
+        # Either don't flip or do flips
+        i = random.randint(0,2)
+
+        if i == 0:
+            self.flip_hor()
+        elif i == 1:
+            self.flip_vert()
+        elif i == 2:
+            self.flip_hor()
+            self.flip_vert()
+        
+        self.translate()
     
     def rotate90(self):
         new_board = [[0 for y in range(9)] for x in range(9)]
@@ -172,6 +195,11 @@ class SudokuGame(object):
         with open(file_name) as file:
             puzzles = [line.strip() for line in file]
             self.from_string(puzzles[line_number])
+
+    def generate(self, difficulty):
+        self.board.generate(difficulty)
+        self.start_puzzle = self.board.get()
+        self.start()
     
     def rotate90(self):
         self.board.rotate90()
@@ -287,6 +315,13 @@ class SudokuUI(Frame):
         puzzlemenu.add_command(label="Reset", command=self.__clear_answers)
         puzzlemenu.add_command(label="Clear", command=self.__null_board)
         puzzlemenu.add_command(label="Set Origin", command=self.__to_origin)
+        generatemenu = Menu(puzzlemenu, tearoff=0)
+        generatemenu.add_command(label="Easy", command=self.__generate_easy)
+        generatemenu.add_command(label="Medium", command=self.__generate_medium)
+        generatemenu.add_command(label="Hard", command=self.__generate_hard)
+        generatemenu.add_command(label="Unfair", command=self.__generate_unfair)
+        generatemenu.add_command(label="Extreme", command=self.__generate_extreme)
+        puzzlemenu.add_cascade(label="Generate", menu=generatemenu)
         menubar.add_cascade(label="Puzzle", menu=puzzlemenu)
         collectionmenu = Menu(menubar, tearoff=0)
         collectionmenu.add_command(label="Next Puzzle", command=self.__next_puzzle)
@@ -339,6 +374,27 @@ class SudokuUI(Frame):
         self.canvas.bind("<F7>", self.__toggle_highlight)
         self.canvas.bind("<F8>", self.__toggle_highlight)
         self.canvas.bind("<F9>", self.__toggle_highlight)
+        
+    def __generate_easy(self):
+        self.game.generate("Easy")
+        self.__draw_puzzle()
+
+    def __generate_medium(self):
+        self.game.generate("Medium")
+        self.__draw_puzzle()
+
+    def __generate_hard(self):
+        self.game.generate("Hard")
+        self.__draw_puzzle()
+
+    def __generate_unfair(self):
+        self.game.generate("Unfair")
+        self.__draw_puzzle()
+
+    def __generate_extreme(self):
+        self.game.generate("Extreme")
+        self.__draw_puzzle()
+
 
     def __rotate90(self):
         self.game.rotate90()
