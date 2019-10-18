@@ -26,21 +26,55 @@ class SudokuBoard(object):
     Sudoku Board Representation
     """
     def __init__(self, puzzle_string):
-        self.board = self.__create_board(puzzle_string)
+        self.__create_board(puzzle_string)
     
     def update(self, puzzle_string):
         self.__create_board(puzzle_string)
     
     def get(self):
-        return self.board
+        return self.board[:]
+
+    def set_board(self, board):
+        self.board = board
     
     def __create_board(self, puzzle_string):
         rows = wrap(puzzle_string, 9)
         rows = [row.replace('.', '0') for row in rows]
         self.board = [ [int(ch) for ch in row] for row in rows ]
     
-    def rotate_board90(self):
-        pass
+    def rotate90(self):
+        new_board = [[0 for y in range(9)] for x in range(9)]
+        for i in range(9):
+            for j in range(9):
+                new_board[j][8-i] = self.board[i][j]
+        self.board = new_board
+
+    def flip_hor(self):
+        new_board = [[0 for y in range(9)] for x in range(9)]
+        for i in range(9):
+            for j in range(9):
+                new_board[8-i][j] = self.board[i][j]
+        self.board = new_board
+
+    def flip_vert(self):
+        new_board = [[0 for y in range(9)] for x in range(9)]
+        for i in range(9):
+            for j in range(9):
+                new_board[i][8-j] = self.board[i][j]
+        self.board = new_board
+        
+    def translate(self):
+        numbers = [1,2,3,4,5,6,7,8,9]
+        random.shuffle(numbers)
+        new_board = [[0 for y in range(9)] for x in range(9)]
+        for i in range(9):
+            for j in range(9):
+                if self.board[i][j] != 0:
+                    new_board[i][j] = numbers[self.board[i][j] - 1]
+                else:
+                    new_board[i][j] = 0
+        self.board = new_board
+
 
 class SudokuGame(object):
     """
@@ -49,12 +83,12 @@ class SudokuGame(object):
     """
 
     def __init__(self):
-        self.puzzle = [[ 0 for x in range(9)] for y in range(9)]
-        self.start_puzzle = [[ 0 for x in range(9)] for y in range(9)]
+        self.board = SudokuBoard("0" * 81)
+        self.puzzle = self.board.get()
+        self.start_puzzle = self.board.get()
         self.candidates = [[[False for z in range(10)] for x in range(9)] for y in range(9)]
         self.null_board()
         self.current_to_origin()
-        self.board = SudokuBoard("000000000000000000000000000000000000000000000000000000000000000000000000000000000")
 
     def start(self):
         self.game_over = False
@@ -64,6 +98,7 @@ class SudokuGame(object):
             self.puzzle.append([])
             for j in range(9):
                 self.puzzle[i].append(self.start_puzzle[i][j])
+        self.board.set_board(self.puzzle)
     
     def get_cell(self, row, col):
         return self.puzzle[row][col]
@@ -137,6 +172,26 @@ class SudokuGame(object):
         with open(file_name) as file:
             puzzles = [line.strip() for line in file]
             self.from_string(puzzles[line_number])
+    
+    def rotate90(self):
+        self.board.rotate90()
+        self.start_puzzle = self.board.get()
+        self.start()
+
+    def flip_hor(self):
+        self.board.flip_hor()
+        self.start_puzzle = self.board.get()
+        self.start()
+
+    def flip_vert(self):
+        self.board.flip_vert()
+        self.start_puzzle = self.board.get()
+        self.start()
+
+    def translate(self):
+        self.board.translate()
+        self.start_puzzle = self.board.get()
+        self.start()
 
     def load_random_puzzle(self, file_name):
         with open(file_name) as file:
@@ -238,6 +293,12 @@ class SudokuUI(Frame):
         collectionmenu.add_command(label="Previous Puzzle", command=self.__previous_puzzle)
         collectionmenu.add_command(label="Random Puzzle", command=self.__random_from_file)
         menubar.add_cascade(label="Collection", menu=collectionmenu)
+        debugmenu = Menu(menubar, tearoff=0)
+        debugmenu.add_command(label="rotate90", command=self.__rotate90)
+        debugmenu.add_command(label="flip horizontal", command=self.__flip_hor)
+        debugmenu.add_command(label="flip vertical", command=self.__flip_vert)
+        debugmenu.add_command(label="translate", command=self.__translate)
+        menubar.add_cascade(label="Debug", menu=debugmenu)
         self.parent.config(menu=menubar)
 
         self.canvas = Canvas(self, width=WIDTH, height=HEIGHT)
@@ -271,6 +332,22 @@ class SudokuUI(Frame):
         self.canvas.bind("<F7>", self.__toggle_highlight)
         self.canvas.bind("<F8>", self.__toggle_highlight)
         self.canvas.bind("<F9>", self.__toggle_highlight)
+
+    def __rotate90(self):
+        self.game.rotate90()
+        self.__draw_puzzle()
+
+    def __flip_hor(self):
+        self.game.flip_hor()
+        self.__draw_puzzle()
+
+    def __flip_vert(self):
+        self.game.flip_vert()
+        self.__draw_puzzle()
+
+    def __translate(self):
+        self.game.translate()
+        self.__draw_puzzle()
 
     def __from_file(self):
         self.file_name = filedialog.askopenfilename(title="Open puzzle file")
