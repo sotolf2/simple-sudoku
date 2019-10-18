@@ -319,10 +319,17 @@ class SudokuUI(Frame):
 
         self.canvas.bind("<Button-1>", self.__cell_clicked)
         self.canvas.bind("<Key>", self.__key_pressed)
+        
         self.canvas.bind("<Left>", self.__cursor_left)
         self.canvas.bind("<Right>", self.__cursor_right)
         self.canvas.bind("<Up>", self.__cursor_up)
         self.canvas.bind("<Down>", self.__cursor_down)
+        
+        self.canvas.bind("<a>", self.__cursor_left)
+        self.canvas.bind("<d>", self.__cursor_right)
+        self.canvas.bind("<w>", self.__cursor_up)
+        self.canvas.bind("<s>", self.__cursor_down)
+        
         self.canvas.bind("<F1>", self.__toggle_highlight)
         self.canvas.bind("<F2>", self.__toggle_highlight)
         self.canvas.bind("<F3>", self.__toggle_highlight)
