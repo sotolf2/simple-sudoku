@@ -28,11 +28,19 @@ class SudokuBoard(object):
     def __init__(self, puzzle_string):
         self.board = self.__create_board(puzzle_string)
     
+    def update(self, puzzle_string):
+        self.__create_board(puzzle_string)
+    
+    def get(self):
+        return self.board
+    
     def __create_board(self, puzzle_string):
         rows = wrap(puzzle_string, 9)
         rows = [row.replace('.', '0') for row in rows]
-        board = [ [int(ch) for ch in row] for row in rows ]
-        return board
+        self.board = [ [int(ch) for ch in row] for row in rows ]
+    
+    def rotate_board90(self):
+        pass
 
 class SudokuGame(object):
     """
@@ -46,6 +54,7 @@ class SudokuGame(object):
         self.candidates = [[[False for z in range(10)] for x in range(9)] for y in range(9)]
         self.null_board()
         self.current_to_origin()
+        self.board = SudokuBoard("000000000000000000000000000000000000000000000000000000000000000000000000000000000")
 
     def start(self):
         self.game_over = False
@@ -135,7 +144,8 @@ class SudokuGame(object):
             self.from_string(random.choice(puzzles))
 
     def from_string(self, puzzle_string):
-        self.start_puzzle = SudokuBoard(puzzle_string).board
+        self.board.update(puzzle_string)
+        self.start_puzzle = self.board.get()
         self.start()
     
     def check_win(self):
