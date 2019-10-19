@@ -714,6 +714,8 @@ class SudokuUI(Frame):
         if self.row >= 0 and self.col >= 0 and event.char in "1234567890":
             if self.mode is Mode.solution and self.game.get_origin(self.row,self.col) == 0:
                 self.game.set_cell(self.row, self.col, int(event.char))
+            elif self.mode is Mode.solution:
+                self.highlight = int(event.char)
             elif self.mode is Mode.candidate:
                 self.game.toggle_candidate(self.row, self.col, int(event.char))
             self.__draw_puzzle()
