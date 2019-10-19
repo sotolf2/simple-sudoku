@@ -12,10 +12,13 @@ WIDTH = HEIGHT = MARGIN * 2 + SIDE * 9 # Width and height of the whole board
 # Highlight colours
 HLANSWER = "light goldenrod"
 HLCAND = "light blue"
+COLOURS = [None, "pale green", "sienna1", "khaki1", "cornflower blue", "mediumpurple1", "peachpuff2", "tomato", "sandy brown", "hot pink"]
 
 class Mode(Enum):
     solution = 1
     candidate = 2
+    colour = 3
+    colour_candidate = 4
 
 class SudokuError(Exception):
     """
@@ -331,6 +334,7 @@ class SudokuUI(Frame):
         self.highlight = 0
         self.puzzle_num = 0
         self.file_name = ""
+        self.colours = [[None for i in range(9)] for j in range(9)]
 
         self.__initUI()
 
@@ -400,6 +404,8 @@ class SudokuUI(Frame):
         self.canvas.bind("<s>", self.__cursor_down)
         
         self.canvas.bind("<u>", self.__undo)
+        self.canvas.bind("<q>", self.__toggle_mode_colouring)
+        self.canvas.bind("<e>", self.__erase_colouring)
 
         self.canvas.bind("<F1>", self.__toggle_highlight)
         self.canvas.bind("<F2>", self.__toggle_highlight)
@@ -410,6 +416,10 @@ class SudokuUI(Frame):
         self.canvas.bind("<F7>", self.__toggle_highlight)
         self.canvas.bind("<F8>", self.__toggle_highlight)
         self.canvas.bind("<F9>", self.__toggle_highlight)
+    
+    def __erase_colouring(self, event):
+        self.colours = [[None for i in range(9)] for j in range(9)]
+        self.__draw_puzzle()
     
     def __undo(self, event):
         self.game.undo()
@@ -539,6 +549,7 @@ class SudokuUI(Frame):
         self.canvas.delete("candidates")
         self.canvas.delete("highlights")
         self.canvas.delete("puzzleinfo")
+        self.canvas.delete("cellcolouring")
         for i in range(9):
             for j in range(9):
                 x0 = MARGIN + j * SIDE + 1
@@ -547,11 +558,17 @@ class SudokuUI(Frame):
                 y1 = MARGIN + (i + 1) * SIDE - 1
                 answer = self.game.get_cell(i,j)
                 candidates = self.game.get_candidates(i,j)
+
                 # First draw the highlight or else the candidates won't be visible
                 if self.highlight != 0 and answer == self.highlight: 
                     self.canvas.create_rectangle(x0, y0, x1, y1, tags="highlights", fill=HLANSWER, outline=HLANSWER)
                 elif self.highlight !=0 and self.highlight in candidates and answer == 0:
                     self.canvas.create_rectangle(x0, y0, x1, y1, tags="highlights", fill=HLCAND, outline=HLCAND)
+
+                # Then draw cell colouring
+                colour = self.colours[i][j]
+                if not colour is None:
+                    self.canvas.create_rectangle(x0, y0, x1, y1, tags="cellcolouring", fill=colour , outline=colour)
                 
                 if answer != 0:
                     # Draw big character
@@ -703,6 +720,8 @@ class SudokuUI(Frame):
                 color = "blue"
             elif self.mode is Mode.solution:
                 color = "red"
+            elif self.mode is Mode.colour:
+                color = "green"
             else:
                 color = "pink"
             self.canvas.create_rectangle(x0, y0, x1, y1, outline=color, tags="cursor", width=3)
@@ -718,6 +737,8 @@ class SudokuUI(Frame):
                 self.highlight = int(event.char)
             elif self.mode is Mode.candidate:
                 self.game.toggle_candidate(self.row, self.col, int(event.char))
+            elif self.mode is Mode.colour:
+                self.colours[self.row][self.col] = COLOURS[int(event.char)]
             self.__draw_puzzle()
             self.__draw_cursor()
             if self.game.check_win():
@@ -736,6 +757,14 @@ class SudokuUI(Frame):
             self.mode = Mode.solution
         else:
             self.mode = Mode.candidate
+        self.__draw_cursor()
+
+    def __toggle_mode_colouring(self, event):
+        if self.mode is Mode.colour:
+            self.mode = Mode.solution
+        else:
+            self.mode = Mode.colour
+        self.__draw_cursor()
 
     def __draw_victory(self):
         # create an oval
