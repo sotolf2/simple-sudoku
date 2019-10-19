@@ -1,7 +1,7 @@
 # simple-sudoku
 A simple python tkinter sudoku program
 
-![screenshot](https://raw.githubusercontent.com/sotolf2/simple-sudoku/master/Skjermbilde.PNG)
+![screenshot](https://raw.githubusercontent.com/sotolf2/simple-sudoku/master/Skjermbildenew.PNG)
 
 ## What is this
 
@@ -37,7 +37,9 @@ sdm files are quite a standard for puzzle collectios and you can grab some at
 http://sudocue.net/download.php for example, or you can make your own, sdm files are basically the same as the single
 line imports shown further up just put one after another on their own line.
 
+If you just have an image to work from, you can just add the given clues into the empty grid, and then use them as a puzzle
 
+    Puzzle -> Set Origin
 
 ### Solving a puzzle
 
@@ -74,3 +76,7 @@ A box will pop up congratulating you when you have solved the puzzle correctly.
 This is the mode that is the hardest to grasp, basically in this mode you can't use higlightning, and the ways that you usually use to change the highlightning will change the colour that you are currently having, this selected colour will now be used to paint the candidate in your current cell with this colour.
 
 It may not be optimal yet, but it's the most comfortable way to use it that I've found so far.
+
+This is how a puzzle can look while colouring:
+
+![Colouring](https://raw.githubusercontent.com/sotolf2/simple-sudoku/master/colouring.PNG)
