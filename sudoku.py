@@ -416,32 +416,33 @@ class SudokuUI(Frame):
 
     def __generate_easy(self):
         self.game.generate("Easy")
-        self.__clear_collection_info()
+        self.file_name = "Easy.seed"
+        self.puzzle_num = 0
         self.__draw_puzzle()
 
     def __generate_medium(self):
         self.game.generate("Medium")
-        self.__clear_collection_info()
+        self.file_name = "Medium.seed"
+        self.puzzle_num = 0
         self.__draw_puzzle()
 
     def __generate_hard(self):
         self.game.generate("Hard")
-        self.__clear_collection_info()
+        self.file_name = "Hard.seed"
+        self.puzzle_num = 0
         self.__draw_puzzle()
 
     def __generate_unfair(self):
         self.game.generate("Unfair")
-        self.__clear_collection_info()
+        self.file_name = "Unfair.seed"
+        self.puzzle_num = 0
         self.__draw_puzzle()
 
     def __generate_extreme(self):
         self.game.generate("Extreme")
-        self.__clear_collection_info()
-        self.__draw_puzzle()
-
-    def __clear_collection_info(self):
-        self.file_name = ""
+        self.file_name = "Extreme.seed"
         self.puzzle_num = 0
+        self.__draw_puzzle()
 
     def __rotate90(self):
         self.game.rotate90()
@@ -562,7 +563,10 @@ class SudokuUI(Frame):
         puzzle_info = ""
         if self.file_name != "":
             collection_name = self.file_name.split("/")[-1].split(".")[-2]
-            puzzle_info = "{}: {}".format(collection_name, self.puzzle_num)
+            if self.puzzle_num == 0:
+                puzzle_info = collection_name
+            else:
+                puzzle_info = "{}: {}".format(collection_name, self.puzzle_num)
         self.canvas.create_text(pix, piy, text=puzzle_info, tags="puzzleinfo", fill="gray", font=("Arial", 12))
 
     def __draw_candidate(self, row, col, candidate):
