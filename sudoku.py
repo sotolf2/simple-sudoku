@@ -416,24 +416,32 @@ class SudokuUI(Frame):
 
     def __generate_easy(self):
         self.game.generate("Easy")
+        self.__clear_collection_info()
         self.__draw_puzzle()
 
     def __generate_medium(self):
         self.game.generate("Medium")
+        self.__clear_collection_info()
         self.__draw_puzzle()
 
     def __generate_hard(self):
         self.game.generate("Hard")
+        self.__clear_collection_info()
         self.__draw_puzzle()
 
     def __generate_unfair(self):
         self.game.generate("Unfair")
+        self.__clear_collection_info()
         self.__draw_puzzle()
 
     def __generate_extreme(self):
         self.game.generate("Extreme")
+        self.__clear_collection_info()
         self.__draw_puzzle()
 
+    def __clear_collection_info(self):
+        self.file_name = ""
+        self.puzzle_num = 0
 
     def __rotate90(self):
         self.game.rotate90()
@@ -521,6 +529,7 @@ class SudokuUI(Frame):
         self.canvas.delete("numbers")
         self.canvas.delete("candidates")
         self.canvas.delete("highlights")
+        self.canvas.delete("puzzleinfo")
         for i in range(9):
             for j in range(9):
                 x0 = MARGIN + j * SIDE + 1
@@ -546,6 +555,15 @@ class SudokuUI(Frame):
                     # Draw candidates
                     for candidate in candidates:
                         self.__draw_candidate(i, j, candidate)
+        
+        # Write puzzle info in the middle bottom of the puzzle
+        pix = WIDTH / 2
+        piy = HEIGHT - MARGIN / 2
+        puzzle_info = ""
+        if self.file_name != "":
+            collection_name = self.file_name.split("/")[-1].split(".")[-2]
+            puzzle_info = "{}: {}".format(collection_name, self.puzzle_num)
+        self.canvas.create_text(pix, piy, text=puzzle_info, tags="puzzleinfo", fill="gray", font=("Arial", 12))
 
     def __draw_candidate(self, row, col, candidate):
         diff = 15
