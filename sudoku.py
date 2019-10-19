@@ -335,6 +335,7 @@ class SudokuUI(Frame):
         self.puzzle_num = 0
         self.file_name = ""
         self.colours = [[None for i in range(9)] for j in range(9)]
+        self.candidate_colours = [[[None for x in range(10)] for y in range(9)] for z in range(9)]
 
         self.__initUI()
 
@@ -406,6 +407,8 @@ class SudokuUI(Frame):
         self.canvas.bind("<u>", self.__undo)
         self.canvas.bind("<q>", self.__toggle_mode_colouring)
         self.canvas.bind("<e>", self.__erase_colouring)
+        self.canvas.bind("<f>", self.__toggle_mode_colour_candidate)
+        self.canvas.bind("<c>", self.__calculate_candidates)
 
         self.canvas.bind("<F1>", self.__toggle_highlight)
         self.canvas.bind("<F2>", self.__toggle_highlight)
@@ -419,6 +422,7 @@ class SudokuUI(Frame):
     
     def __erase_colouring(self, event):
         self.colours = [[None for i in range(9)] for j in range(9)]
+        self.candidate_colours = [[[None for x in range(10)] for y in range(9)] for z in range(9)]
         self.__draw_puzzle()
     
     def __undo(self, event):
@@ -499,7 +503,7 @@ class SudokuUI(Frame):
         self.game.load_random_puzzle(self.file_name)
         self.__draw_puzzle()
     
-    def __calculate_candidates(self):
+    def __calculate_candidates(self, event=None):
         self.game.calculate_all_candidates()
         self.__draw_puzzle()
 
@@ -550,6 +554,7 @@ class SudokuUI(Frame):
         self.canvas.delete("highlights")
         self.canvas.delete("puzzleinfo")
         self.canvas.delete("cellcolouring")
+        self.canvas.delete("candidatecolour")
         for i in range(9):
             for j in range(9):
                 x0 = MARGIN + j * SIDE + 1
@@ -560,9 +565,13 @@ class SudokuUI(Frame):
                 candidates = self.game.get_candidates(i,j)
 
                 # First draw the highlight or else the candidates won't be visible
-                if self.highlight != 0 and answer == self.highlight: 
+                do_highlight = True
+                if self.highlight == 0 or self.mode is Mode.colour_candidate:
+                    do_highlight = False
+
+                if do_highlight and answer == self.highlight: 
                     self.canvas.create_rectangle(x0, y0, x1, y1, tags="highlights", fill=HLANSWER, outline=HLANSWER)
-                elif self.highlight !=0 and self.highlight in candidates and answer == 0:
+                elif do_highlight and self.highlight in candidates and answer == 0:
                     self.canvas.create_rectangle(x0, y0, x1, y1, tags="highlights", fill=HLCAND, outline=HLCAND)
 
                 # Then draw cell colouring
@@ -578,6 +587,9 @@ class SudokuUI(Frame):
                     color = "black" if answer == original else "olive drab"
                     self.canvas.create_text(x,y, text=answer, tags="numbers", fill=color, font=("Arial",24))
                 else:
+                    # Draw candidate colouring
+                    for candidate in candidates:
+                        self.__draw_candidate_colour(i, j, candidate)
                     # Draw candidates
                     for candidate in candidates:
                         self.__draw_candidate(i, j, candidate)
@@ -594,7 +606,7 @@ class SudokuUI(Frame):
                 puzzle_info = "{}: {}".format(collection_name, self.puzzle_num + 1)
         self.canvas.create_text(pix, piy, text=puzzle_info, tags="puzzleinfo", fill="gray", font=("Arial", 12))
 
-    def __draw_candidate(self, row, col, candidate):
+    def __get_candidate_pos(self, row, col, candidate):
         diff = 15
         cx = MARGIN + col * SIDE + SIDE / 2
         cy = MARGIN + row * SIDE + SIDE / 2
@@ -626,7 +638,24 @@ class SudokuUI(Frame):
             x = cx + diff
             y = cy + diff
 
+        return x, y
+
+
+    def __draw_candidate(self, row, col, candidate):
+        x,y = self.__get_candidate_pos(row, col, candidate)
         self.canvas.create_text(x,y, text=candidate, tags="candidates", fill="gray", font=("Arial", 10))
+
+    def __draw_candidate_colour(self, row, col, candidate):
+        diff = 7
+        colour = self.candidate_colours[row][col][candidate]
+        if colour is None:
+            return
+        x,y = self.__get_candidate_pos(row, col, candidate)
+        x0 = x - diff
+        x1 = x + diff
+        y0 = y - diff
+        y1 = y + diff
+        self.canvas.create_oval(x0, y0, x1, y1, tags="candidatecolour", fill=colour, outline=colour)
     
     def __clear_answers(self):
         self.game.start()
@@ -722,6 +751,8 @@ class SudokuUI(Frame):
                 color = "red"
             elif self.mode is Mode.colour:
                 color = "green"
+            elif self.mode is Mode.colour_candidate:
+                color = "yellow3"
             else:
                 color = "pink"
             self.canvas.create_rectangle(x0, y0, x1, y1, outline=color, tags="cursor", width=3)
@@ -739,6 +770,10 @@ class SudokuUI(Frame):
                 self.game.toggle_candidate(self.row, self.col, int(event.char))
             elif self.mode is Mode.colour:
                 self.colours[self.row][self.col] = COLOURS[int(event.char)]
+            elif self.mode is Mode.colour_candidate and self.game.get_origin(self.row,self.col) != 0:
+                self.highlight = int(event.char)
+            elif self.mode is Mode.colour_candidate:
+                self.candidate_colours[self.row][self.col][int(event.char)] = COLOURS[self.highlight]
             self.__draw_puzzle()
             self.__draw_cursor()
             if self.game.check_win():
@@ -758,6 +793,7 @@ class SudokuUI(Frame):
         else:
             self.mode = Mode.candidate
         self.__draw_cursor()
+        self.__draw_puzzle()
 
     def __toggle_mode_colouring(self, event):
         if self.mode is Mode.colour:
@@ -765,6 +801,15 @@ class SudokuUI(Frame):
         else:
             self.mode = Mode.colour
         self.__draw_cursor()
+        self.__draw_puzzle()
+    
+    def __toggle_mode_colour_candidate(self, event):
+        if self.mode is Mode.colour_candidate:
+            self.mode = Mode.solution
+        else:
+            self.mode = Mode.colour_candidate
+        self.__draw_cursor()
+        self.__draw_puzzle()
 
     def __draw_victory(self):
         # create an oval
