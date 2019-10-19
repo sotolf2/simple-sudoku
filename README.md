@@ -32,6 +32,8 @@ just clicking the cell with the mouse.
 
 Use the F-Buttons (F1-F9) To highlight, the candidates and numbers.
 
+Use the u-key to undo your progress.
+
 If you just have a picture of a sudoku that you want to add to the program, you can just add the givens from the puzzle manually
 into the blank startup grid, and push the button set origin, this will turn the clues into real clues and make it so that you can't
 overwrite them.
