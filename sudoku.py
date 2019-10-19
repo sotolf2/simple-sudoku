@@ -1,7 +1,7 @@
 import random
 from collections import deque
 from copy import deepcopy
-from tkinter import Tk, Canvas, Frame, Button, Menu, filedialog, messagebox, BOTH, TOP, BOTTOM, LEFT, RIGHT
+from tkinter import Tk, Canvas, Frame, Button, Menu, filedialog, simpledialog, messagebox, BOTH, TOP, BOTTOM, LEFT, RIGHT
 from textwrap import wrap
 from enum import Enum
 
@@ -359,6 +359,7 @@ class SudokuUI(Frame):
         collectionmenu = Menu(menubar, tearoff=0)
         collectionmenu.add_command(label="Next Puzzle", command=self.__next_puzzle)
         collectionmenu.add_command(label="Previous Puzzle", command=self.__previous_puzzle)
+        collectionmenu.add_command(label="Go to specific Puzzle...", command=self.__goto_puzzle)
         collectionmenu.add_command(label="Random Puzzle", command=self.__random_from_file)
         menubar.add_cascade(label="Collection", menu=collectionmenu)
         debugmenu = Menu(menubar, tearoff=0)
@@ -409,7 +410,7 @@ class SudokuUI(Frame):
         self.canvas.bind("<F7>", self.__toggle_highlight)
         self.canvas.bind("<F8>", self.__toggle_highlight)
         self.canvas.bind("<F9>", self.__toggle_highlight)
-        
+    
     def __undo(self, event):
         self.game.undo()
         self.__draw_puzzle()
@@ -466,6 +467,13 @@ class SudokuUI(Frame):
         self.game.load_puzzle(self.file_name, self.puzzle_num)
         self.__draw_puzzle()
 
+    def __goto_puzzle(self):
+        in_num = simpledialog.askinteger("Go to puzzle", "Go to which puzzle number")
+        if in_num is not None:
+            self.puzzle_num = in_num
+            self.game.load_puzzle(self.file_name, self.puzzle_num)
+            self.__draw_puzzle()
+        
     def __previous_puzzle(self):
         if self.puzzle_num != 0:
             self.puzzle_num -= 1
