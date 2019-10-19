@@ -11,34 +11,66 @@ more python, and maybe also some more about sudoku stuff. In addition it would b
 
 ## How do I use this thing.
 
-Yeah, so interfaces and stuff aren't completely my thing, but a short explanation of how to work this program.
+### Get a puzzle to solve
 
-At least until now I haven't implemented creating/generating puzzles so for now I've made it simpl as simple as found to import one into
-the program. For now I'm only supporting 81 char codes, but I may do something more interesting with that later when I find out how to 
-really make a bit more of a user interface.
+Here you have some possibilities, you can get simple-sudoku to generate a puzzle for you, there are 5 difficulty ratings to choose between, all these puzzles are solveable, and have only one solution. 
 
-So you can use a code like:
+    Puzzle -> Generate -> Difficulty
+
+A second posibility is to import a puzzle from a 81 character puzzle string such as this one:
 
     76.......53.896.......1.2..1....248.....8.....296....1..3.2.......751.36.......12
     
-Just copy the code from hodoku for example, or you can copy lines from the sudoku collection files that you can find under
-http://sudocue.net/download.php for example and click the button From clipboard to load the puzzle into simple sudoku.
+Copy the code into your clipboard and then you can import the puzzle from
 
-As another possibility, you can download a file from that site or other files in the sdm format, and open it with the open file button, to have multiple puzzles at once. using the << and >> buttons to load the previous and next puzzle.
+    File -> Import from clipboard
+    
+Simple sudoku can also import a puzzle collection from a \*.sdm file, and you can solve these
 
-For the Program itself if the cursor is red it means you will be entering big numbers, pressing the spacebar will change you over to
-candidate mode, and the program will indicate this by turning your cursor blue. You can move the cursor by using the arrow keys, or
-just clicking the cell with the mouse.
+    File -> Open file
+    
+You can then solve the current puzzle, and use the menu or the << and >> buttons to jump to the previous or next puzzle, or you can go to a specific numbered puzzle from
 
-Use the F-Buttons (F1-F9) To highlight, the candidates and numbers.
+    Collection -> Go to specific puzzle
 
-Use the u-key to undo your progress.
+sdm files are quite a standard for puzzle collectios and you can grab some at
+http://sudocue.net/download.php for example, or you can make your own, sdm files are basically the same as the single
+line imports shown further up just put one after another on their own line.
 
-If you just have a picture of a sudoku that you want to add to the program, you can just add the givens from the puzzle manually
-into the blank startup grid, and push the button set origin, this will turn the clues into real clues and make it so that you can't
-overwrite them.
 
-Pressing the reset button will remove all of the numbers that you have been manually adding (green).
 
-If you click the button "Calculate candidates" the program will add all candidates that are possible to each of the cells.
+### Solving a puzzle
 
+So after you have imported a puzzle you can start solving, simple sudoku are basically keyboard driven, at least until someone finds a comfortable way to do it with a mouse. 
+
+The Program uses modes and the cursor (square marking the current cell) will change colour depending on which mode you're in. There are currently 4 modes that you can be in, it changes what happens when you press one of the number keys:
+
+* Solution - Red - Will set the current cell
+* Candidate - Blue - Will let you toggle candidates for the current cell
+* Cell Colouring - Green - Will colour the cell in a colour
+* Candidate Colouring - Yellow will let you set the colour for candidates.
+
+If you are confused why your cursor is in a specific colour, tapping the space bar will change you to candidate mode, which is the mode that you will probably spend the most time in.
+
+You can change the highlighting of cells by pressing a number on a cell that belongs to the puzzle (black big numbers).
+
+Don't be too afraid of doing something wrong as there is an undo function.
+
+A box will pop up congratulating you when you have solved the puzzle correctly.
+
+### Keyboard shortcuts
+
+* wasd or Arrow keys (move cursor around)
+* Space toggle candidate mode
+* c - Calculate candidates
+* F1-F9 Highlight cells
+* q - toggle Cell colouring mode
+* f - toggle candidate colouring
+* e - remove all colouring
+* u - undo
+
+### How do I use Candidate colouring?
+
+This is the mode that is the hardest to grasp, basically in this mode you can't use higlightning, and the ways that you usually use to change the highlightning will change the colour that you are currently having, this selected colour will now be used to paint the candidate in your current cell with this colour.
+
+It may not be optimal yet, but it's the most comfortable way to use it that I've found so far.
