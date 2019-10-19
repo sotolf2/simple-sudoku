@@ -470,7 +470,7 @@ class SudokuUI(Frame):
     def __goto_puzzle(self):
         in_num = simpledialog.askinteger("Go to puzzle", "Go to which puzzle number")
         if in_num is not None:
-            self.puzzle_num = in_num
+            self.puzzle_num = in_num - 1
             self.game.load_puzzle(self.file_name, self.puzzle_num)
             self.__draw_puzzle()
         
@@ -574,7 +574,7 @@ class SudokuUI(Frame):
             if self.puzzle_num == 0:
                 puzzle_info = collection_name
             else:
-                puzzle_info = "{}: {}".format(collection_name, self.puzzle_num)
+                puzzle_info = "{}: {}".format(collection_name, self.puzzle_num + 1)
         self.canvas.create_text(pix, piy, text=puzzle_info, tags="puzzleinfo", fill="gray", font=("Arial", 12))
 
     def __draw_candidate(self, row, col, candidate):
