@@ -118,11 +118,16 @@ class SudokuGame(object):
         self.undostack = deque()
         self.null_board()
         self.current_to_origin()
+        self.colours = [[0 for i in range(9)] for j in range(9)]
+        self.candidate_colours = [[[0 for x in range(10)] for y in range(9)] for z in range(9)]
 
     def start(self):
         self.game_over = False
         self.candidates = [[[False for z in range(10)] for x in range(9)] for y in range(9)]
         self.puzzle = []
+        self.colours = [[0 for i in range(9)] for j in range(9)]
+        self.candidate_colours = [[[0 for x in range(10)] for y in range(9)] for z in range(9)]
+
         for i in range(9):
             self.puzzle.append([])
             for j in range(9):
@@ -131,10 +136,10 @@ class SudokuGame(object):
         self.__save_undo_state()
     
     def __save_undo_state(self):
-        self.undostack.append((deepcopy(self.puzzle), deepcopy(self.start_puzzle), deepcopy(self.candidates)))
+        self.undostack.append((deepcopy(self.puzzle), deepcopy(self.start_puzzle), deepcopy(self.candidates),deepcopy(self.colours), deepcopy(self.candidate_colours)))
     
     def undo(self):
-        self.puzzle, self.start_puzzle, self.candidates = self.undostack.pop()
+        self.puzzle, self.start_puzzle, self.candidates, self.colours, self.candidate_colours = self.undostack.pop()
 
     def get_cell(self, row, col):
         return self.puzzle[row][col]
@@ -167,10 +172,31 @@ class SudokuGame(object):
                 candidates.append(i)
         return candidates
     
+    def get_cell_colour(self, row, col):
+        return COLOURS[self.colours[row][col]]
+    
+    def get_candidate_colour(self, row, col, candidate):
+        return COLOURS[self.candidate_colours[row][col][candidate]]
+    
+    def set_candidate_colour(self, row, col, candidate, colour_number, undo=True):
+        self.candidate_colours[row][col][candidate] = colour_number
+        if undo:
+            self.__save_undo_state()
+    
+    def set_cell_colour(self, row, col, colour_number, undo=True):
+        self.colours[row][col] = colour_number
+        if undo:
+            self.__save_undo_state()
+
+
     def toggle_candidate(self, row, col, val, undo=True):
         self.candidates[row][col][val] = not self.candidates[row][col][val]
         if undo:
             self.__save_undo_state()
+
+    def reset_colours(self):
+        self.colours = [[0 for i in range(9)] for j in range(9)]
+        self.candidate_colours = [[[0 for x in range(10)] for y in range(9)] for z in range(9)]
     
     def remove_candidate(self, row, col, val, undo=True):
         self.candidates[row][col][val] = False
@@ -334,8 +360,6 @@ class SudokuUI(Frame):
         self.highlight = 0
         self.puzzle_num = 0
         self.file_name = ""
-        self.colours = [[None for i in range(9)] for j in range(9)]
-        self.candidate_colours = [[[None for x in range(10)] for y in range(9)] for z in range(9)]
 
         self.__initUI()
 
@@ -390,9 +414,6 @@ class SudokuUI(Frame):
         self.__draw_puzzle()
         self.__draw_cursor()
         self.canvas.focus_set()
-
-        self.canvas.bind("<Button-1>", self.__cell_clicked)
-        self.canvas.bind("<Key>", self.__key_pressed)
         
         self.canvas.bind("<Left>", self.__cursor_left)
         self.canvas.bind("<Right>", self.__cursor_right)
@@ -419,10 +440,12 @@ class SudokuUI(Frame):
         self.canvas.bind("<F7>", self.__toggle_highlight)
         self.canvas.bind("<F8>", self.__toggle_highlight)
         self.canvas.bind("<F9>", self.__toggle_highlight)
+
+        self.canvas.bind("<Button-1>", self.__cell_clicked)
+        self.canvas.bind("<Key>", self.__key_pressed)
     
     def __erase_colouring(self, event):
-        self.colours = [[None for i in range(9)] for j in range(9)]
-        self.candidate_colours = [[[None for x in range(10)] for y in range(9)] for z in range(9)]
+        self.game.reset_colours()
         self.__draw_puzzle()
     
     def __undo(self, event):
@@ -575,7 +598,7 @@ class SudokuUI(Frame):
                     self.canvas.create_rectangle(x0, y0, x1, y1, tags="highlights", fill=HLCAND, outline=HLCAND)
 
                 # Then draw cell colouring
-                colour = self.colours[i][j]
+                colour = self.game.get_cell_colour(i,j)
                 if not colour is None:
                     self.canvas.create_rectangle(x0, y0, x1, y1, tags="cellcolouring", fill=colour , outline=colour)
                 
@@ -647,7 +670,7 @@ class SudokuUI(Frame):
 
     def __draw_candidate_colour(self, row, col, candidate):
         diff = 7
-        colour = self.candidate_colours[row][col][candidate]
+        colour = self.game.get_candidate_colour(row, col, candidate)
         if colour is None:
             return
         x,y = self.__get_candidate_pos(row, col, candidate)
@@ -769,15 +792,14 @@ class SudokuUI(Frame):
             elif self.mode is Mode.candidate:
                 self.game.toggle_candidate(self.row, self.col, int(event.char))
             elif self.mode is Mode.colour:
-                self.colours[self.row][self.col] = COLOURS[int(event.char)]
+                self.game.set_cell_colour(self.row, self.col,int(event.char))
             elif self.mode is Mode.colour_candidate and self.game.get_origin(self.row,self.col) != 0:
                 self.highlight = int(event.char)
             elif self.mode is Mode.colour_candidate:
-                self.candidate_colours[self.row][self.col][int(event.char)] = COLOURS[self.highlight]
+                self.game.set_candidate_colour(self.row, self.col, int(event.char), self.highlight)
             self.__draw_puzzle()
             self.__draw_cursor()
             if self.game.check_win():
-                #self.__draw_victory()
                 messagebox.showinfo("Completed", "Congratulations, you solved the puzzle!")
         elif event.char == " ":
             self.__toggle_mode_candidate()
