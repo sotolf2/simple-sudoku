@@ -374,6 +374,7 @@ class SudokuUI(Frame):
         filemenu.add_command(label="Import from clipboard", command=self.__from_clip)
         menubar.add_cascade(label="File", menu=filemenu)
         puzzlemenu = Menu(menubar, tearoff=0)
+        puzzlemenu.add_command(label="Calculate candidates", command=self.__calculate_candidates)
         puzzlemenu.add_command(label="Reset", command=self.__clear_answers)
         puzzlemenu.add_command(label="Clear", command=self.__null_board)
         puzzlemenu.add_command(label="Set Origin", command=self.__to_origin)
@@ -400,15 +401,7 @@ class SudokuUI(Frame):
         self.parent.config(menu=menubar)
 
         self.canvas = Canvas(self, width=WIDTH, height=HEIGHT)
-        self.canvas.pack(fill=BOTH, side=TOP)
-        self.buttons = Frame(self)
-        calculate_candidates = Button(self.buttons, text="Calculate candidates", command=self.__calculate_candidates)
-        calculate_candidates.grid(row=0, column=4)
-        previous_puzzle = Button(self.buttons, text="<<", command=self.__previous_puzzle)
-        previous_puzzle.grid(row=0, column=6)
-        next_puzzle = Button(self.buttons, text=">>", command=self.__next_puzzle)
-        next_puzzle.grid(row=0, column=7)
-        self.buttons.pack(fill=BOTH, side=BOTTOM)
+        self.canvas.pack(fill=BOTH, expand=True)
 
         self.__draw_grid()
         self.__draw_puzzle()
@@ -850,5 +843,5 @@ if __name__ == '__main__':
 
     root = Tk()
     SudokuUI(root,game)
-    root.geometry("{}x{}".format(WIDTH, HEIGHT + 40))
+    root.geometry("{}x{}".format(WIDTH, HEIGHT))
     root.mainloop()
