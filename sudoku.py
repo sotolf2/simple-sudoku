@@ -114,7 +114,7 @@ class HintEngine(object):
     def __init__(self, game):
         self.hint = None
         self.game = game
-        self.techs = []
+        self.techs = [self.__naked_single]
     
     def get_hint(self):
         for tech in self.techs:
@@ -124,6 +124,18 @@ class HintEngine(object):
         
         return self.hint
 
+    def __naked_single(self):
+        good_cells = []
+        good_cands = []
+        for row in range(9):
+            for col in range(9):
+                cands = self.game.get_candidates(row, col)
+                if len(cands) == 1:
+                    good_cells.append((row,col))
+                    good_cands.append((row,col,cands[0]))
+        
+        if len(good_cells) > 0:
+            self.hint = Hint("Naked single", good_cells, None, good_cands, None, "The only number that can go in this cell is")
 
 
 class SudokuGame(object):
@@ -159,7 +171,34 @@ class SudokuGame(object):
     
     def __save_undo_state(self):
         self.undostack.append((deepcopy(self.puzzle), deepcopy(self.start_puzzle), deepcopy(self.candidates),deepcopy(self.colours), deepcopy(self.candidate_colours)))
-    
+
+    def hint(self):
+        self.reset_colours()
+        hint = HintEngine(self).get_hint()
+
+        if hint is None:
+            return
+
+        if not hint.good_cells is None:
+            for cell in hint.good_cells:
+                row, col = cell
+                self.colours[row][col] = 1
+
+        if not hint.bad_cells is None:
+            for cell in hint.bad_cells:
+                row, col = cell
+                self.colours[row][col] = 2
+
+        if not hint.good_cands is None:
+            for cand in hint.good_cands:
+                row, col, cand = cand
+                self.candidate_colours[row][col][cand] = 1
+
+        if not hint.bad_cands is None:
+            for cand in hint.bad_cands:
+                row, col, cand = cand
+                self.candidate_colours[row][col][cand] = 2
+
     def undo(self):
         self.puzzle, self.start_puzzle, self.candidates, self.colours, self.candidate_colours = self.undostack.pop()
 
@@ -404,6 +443,7 @@ class SudokuUI(Frame):
         menubar.add_cascade(label="File", menu=filemenu)
         puzzlemenu = Menu(menubar, tearoff=0)
         puzzlemenu.add_command(label="Calculate candidates", command=self.__calculate_candidates)
+        puzzlemenu.add_command(label="Get hint", command=self.__hint)
         puzzlemenu.add_command(label="Reset", command=self.__clear_answers)
         puzzlemenu.add_command(label="Clear", command=self.__null_board)
         puzzlemenu.add_command(label="Set Origin", command=self.__to_origin)
@@ -469,6 +509,10 @@ class SudokuUI(Frame):
     
     def __erase_colouring(self, event):
         self.game.reset_colours()
+        self.__draw_puzzle()
+
+    def __hint(self):
+        self.game.hint()
         self.__draw_puzzle()
     
     def __undo(self, event):
