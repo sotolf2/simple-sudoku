@@ -684,7 +684,7 @@ class SudokuUI(Frame):
         self.canvas.create_text(x,y, text=candidate, tags="candidates", fill="gray", font=("Arial", self.candidatesize))
 
     def __draw_candidate_colour(self, row, col, candidate):
-        diff = 7
+        diff = self.candidatediff / 2 - 1
         colour = self.game.get_candidate_colour(row, col, candidate)
         if colour is None:
             return
