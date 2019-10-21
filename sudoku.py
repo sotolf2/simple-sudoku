@@ -355,6 +355,13 @@ class SudokuUI(Frame):
         self.parent = parent
         Frame.__init__(self, parent)
 
+        self.margin =  20 # Pixels around the board
+        self.side = 50 # Height of each board cell
+        self.width = self.height = self.margin * 2 + self.side * 9 # Width and height of the whole board
+        self.cluesize = self.side // 2
+        self.candidatesize = self.side // 4
+        self.candidatediff = self.side // 3
+
         self.row, self.col = 0, 0
         self.mode = Mode.solution
         self.highlight = 0
@@ -436,6 +443,7 @@ class SudokuUI(Frame):
 
         self.canvas.bind("<Button-1>", self.__cell_clicked)
         self.canvas.bind("<Key>", self.__key_pressed)
+        self.canvas.bind("<Configure>", self.__canvas_resize)
     
     def __erase_colouring(self, event):
         self.game.reset_colours()
@@ -545,24 +553,38 @@ class SudokuUI(Frame):
         self.game.from_string(puzzle_string)
         self.__draw_puzzle()
 
+    def __canvas_resize(self, event):
+        base = min(event.width, event.height)
+
+        self.side = (base - 2 * self.margin) // 9 
+        self.width = self.height = self.margin * 2 + self.side * 9 # Width and height of the whole board
+        self.cluesize = self.side // 2
+        self.candidatesize = self.side // 4
+        self.candidatediff = self.side // 3
+
+        self.__draw_grid()
+        self.__draw_puzzle()
+        self.__draw_cursor()
+
     def __draw_grid(self):
         """
         Draws grid divided with blue lines into 3x3 squares
         """
+        self.canvas.delete("grid")
         for i in range(10):
             color = "gray22" if i % 3 == 0 else "gray70"
 
-            x0 = MARGIN + i * SIDE
-            y0 = MARGIN
-            x1 = MARGIN + i * SIDE
-            y1 = HEIGHT - MARGIN
-            self.canvas.create_line(x0, y0, x1, y1, fill=color, width=1)
+            x0 = self.margin + i * self.side
+            y0 = self.margin
+            x1 = self.margin + i * self.side
+            y1 = self.height - self.margin
+            self.canvas.create_line(x0, y0, x1, y1, fill=color, width=1, tags="grid")
 
-            x0 = MARGIN
-            y0 = MARGIN + i * SIDE
-            x1 = WIDTH - MARGIN
-            y1 = MARGIN + i * SIDE
-            self.canvas.create_line(x0, y0, x1, y1, fill=color, width=1)
+            x0 = self.margin
+            y0 = self.margin + i * self.side
+            x1 = self.width - self.margin
+            y1 = self.margin + i * self.side
+            self.canvas.create_line(x0, y0, x1, y1, fill=color, width=1, tags="grid")
     
     def __draw_puzzle(self):
         self.canvas.delete("numbers")
@@ -573,10 +595,10 @@ class SudokuUI(Frame):
         self.canvas.delete("candidatecolour")
         for i in range(9):
             for j in range(9):
-                x0 = MARGIN + j * SIDE + 1
-                y0 = MARGIN + i * SIDE + 1
-                x1 = MARGIN + (j + 1) * SIDE - 1
-                y1 = MARGIN + (i + 1) * SIDE - 1
+                x0 = self.margin + j * self.side + 1
+                y0 = self.margin + i * self.side + 1
+                x1 = self.margin + (j + 1) * self.side - 1
+                y1 = self.margin + (i + 1) * self.side - 1
                 answer = self.game.get_cell(i,j)
                 candidates = self.game.get_candidates(i,j)
 
@@ -597,11 +619,11 @@ class SudokuUI(Frame):
                 
                 if answer != 0:
                     # Draw big character
-                    x = MARGIN + j * SIDE + SIDE / 2
-                    y = MARGIN + i * SIDE + SIDE / 2
+                    x = self.margin + j * self.side + self.side / 2
+                    y = self.margin + i * self.side + self.side / 2
                     original = self.game.get_origin(i, j)
                     color = "black" if answer == original else "olive drab"
-                    self.canvas.create_text(x,y, text=answer, tags="numbers", fill=color, font=("Arial",24))
+                    self.canvas.create_text(x,y, text=answer, tags="numbers", fill=color, font=("Arial",self.cluesize))
                 else:
                     # Draw candidate colouring
                     for candidate in candidates:
@@ -611,8 +633,8 @@ class SudokuUI(Frame):
                         self.__draw_candidate(i, j, candidate)
         
         # Write puzzle info in the middle bottom of the puzzle
-        pix = WIDTH / 2
-        piy = HEIGHT - MARGIN / 2
+        pix = self.width / 2
+        piy = self.height - self.margin / 2
         puzzle_info = ""
         if self.file_name != "":
             collection_name = self.file_name.split("/")[-1].split(".")[-2]
@@ -623,9 +645,9 @@ class SudokuUI(Frame):
         self.canvas.create_text(pix, piy, text=puzzle_info, tags="puzzleinfo", fill="gray", font=("Arial", 12))
 
     def __get_candidate_pos(self, row, col, candidate):
-        diff = 15
-        cx = MARGIN + col * SIDE + SIDE / 2
-        cy = MARGIN + row * SIDE + SIDE / 2
+        diff = self.candidatediff
+        cx = self.margin + col * self.side + self.side / 2
+        cy = self.margin + row * self.side + self.side / 2
         if candidate == 1:
             x = cx - diff
             y = cy - diff
@@ -659,7 +681,7 @@ class SudokuUI(Frame):
 
     def __draw_candidate(self, row, col, candidate):
         x,y = self.__get_candidate_pos(row, col, candidate)
-        self.canvas.create_text(x,y, text=candidate, tags="candidates", fill="gray", font=("Arial", 10))
+        self.canvas.create_text(x,y, text=candidate, tags="candidates", fill="gray", font=("Arial", self.candidatesize))
 
     def __draw_candidate_colour(self, row, col, candidate):
         diff = 7
@@ -683,11 +705,11 @@ class SudokuUI(Frame):
             return
 
         x, y = event.x, event.y
-        if(MARGIN < x < WIDTH - MARGIN and MARGIN < y < HEIGHT - MARGIN):
+        if(self.margin < x < self.width - self.margin and self.margin < y < self.height - self.margin):
             self.canvas.focus_set()
 
             # get row and col numbers from x,y coordinates
-            row, col = (y - MARGIN) // SIDE, (x - MARGIN) // SIDE
+            row, col = (y - self.margin) // self.side, (x - self.margin) // self.side
 
             # if cell was selected already - deselect it
             if (row, col) == (self.row, self.col):
@@ -756,10 +778,10 @@ class SudokuUI(Frame):
     def __draw_cursor(self):
         self.canvas.delete("cursor")
         if self.row >= 0 and self.col >= 0:
-            x0 = MARGIN + self.col * SIDE + 1
-            y0 = MARGIN + self.row * SIDE + 1
-            x1 = MARGIN + (self.col + 1) * SIDE - 1
-            y1 = MARGIN + (self.row + 1) * SIDE - 1
+            x0 = self.margin + self.col * self.side + 1
+            y0 = self.margin + self.row * self.side + 1
+            x1 = self.margin + (self.col + 1) * self.side - 1
+            y1 = self.margin + (self.row + 1) * self.side - 1
             color = ""
             if self.mode is Mode.candidate:
                 color = "blue"
@@ -825,16 +847,6 @@ class SudokuUI(Frame):
             self.mode = Mode.colour_candidate
         self.__draw_cursor()
         self.__draw_puzzle()
-
-    def __draw_victory(self):
-        # create an oval
-        x0 = y0 = MARGIN + SIDE * 2
-        x1 = y1 = MARGIN + SIDE * 7
-        self.canvas.create_oval(x0, y0, x1, y1, tags="victory", fill="dark orange", outline="orange")
-
-        # create text
-        x = y = MARGIN + 4 * SIDE + SIDE / 2
-        self.canvas.create_text(x, y, text="You win!", tags="victory", fill="white", font=("Arial", 32))
 
 
 if __name__ == '__main__':
