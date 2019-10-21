@@ -1,5 +1,5 @@
 import random
-from collections import deque
+from collections import deque, namedtuple
 from copy import deepcopy
 from tkinter import Tk, Canvas, Frame, Button, Menu, filedialog, simpledialog, messagebox, BOTH, TOP, BOTTOM, LEFT, RIGHT
 from textwrap import wrap
@@ -102,6 +102,28 @@ class SudokuBoard(object):
                 else:
                     new_board[i][j] = 0
         self.board = new_board
+
+Hint = namedtuple('Hint', "technique good_cells bad_cells good_cands bad_cands text")
+
+class HintEngine(object):
+    """
+    Here will be methods that searches hints for solving a sudoku
+
+    Most functions will return Hints
+    """
+    def __init__(self, game):
+        self.hint = None
+        self.game = game
+        self.techs = []
+    
+    def get_hint(self):
+        for tech in self.techs:
+            tech()
+            if not self.hint is None:
+                break
+        
+        return self.hint
+
 
 
 class SudokuGame(object):
