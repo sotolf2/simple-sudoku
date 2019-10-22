@@ -165,9 +165,9 @@ class SudokuGame(object):
             for j in range(9):
                 self.puzzle[i].append(self.start_puzzle[i][j])
         self.board.set_board(self.puzzle)
-        self.__save_undo_state()
+        self.save_undo_state()
     
-    def __save_undo_state(self):
+    def save_undo_state(self):
         self.undostack.append((deepcopy(self.puzzle), deepcopy(self.start_puzzle), deepcopy(self.candidates),deepcopy(self.colours), deepcopy(self.candidate_colours)))
 
     def hint(self):
@@ -205,16 +205,17 @@ class SudokuGame(object):
     def get_cell(self, row, col):
         return self.puzzle[row][col]
     
-    def set_cell(self, row, col, val):
+    def set_cell(self, row, col, val, undo=True):
         self.puzzle[row][col] = val
         self.update_candidates(row, col, undo=False)
-        self.__save_undo_state()
+        if undo:
+            self.save_undo_state()
     
     def calculate_all_candidates(self):
         for row in range(9):
             for col in range(9):
                 self.calculate_candidates(row, col, undo=False)
-        self.__save_undo_state()
+        self.save_undo_state()
 
     def calculate_candidates(self, row, col, undo=True):
         if self.puzzle[row][col] == 0:
@@ -223,7 +224,7 @@ class SudokuGame(object):
                 self.add_candidate(row, col, candidate, undo=False)
         
         if undo:
-            self.__save_undo_state()
+            self.save_undo_state()
 
 
     def get_candidates(self, row, col):
@@ -241,12 +242,12 @@ class SudokuGame(object):
     def set_candidate_colour(self, row, col, candidate, colour_number, undo=True):
         self.candidate_colours[row][col][candidate] = colour_number
         if undo:
-            self.__save_undo_state()
+            self.save_undo_state()
     
     def set_cell_colour(self, row, col, colour_number, undo=True):
         self.colours[row][col] = colour_number
         if undo:
-            self.__save_undo_state()
+            self.save_undo_state()
 
 
     def toggle_candidate(self, row, col, val, undo=True):
@@ -255,7 +256,7 @@ class SudokuGame(object):
         else:
             self.candidates[row][col].remove(val)
         if undo:
-            self.__save_undo_state()
+            self.save_undo_state()
 
     def reset_colours(self):
         self.colours = [[0 for i in range(9)] for j in range(9)]
@@ -264,12 +265,12 @@ class SudokuGame(object):
     def remove_candidate(self, row, col, val, undo=True):
         self.candidates[row][col].discard(val)
         if undo:
-            self.__save_undo_state()
+            self.save_undo_state()
     
     def add_candidate(self, row, col, val, undo=True):
         self.candidates[row][col].add(val)
         if undo:    
-            self.__save_undo_state()
+            self.save_undo_state()
 
     def get_origin(self, row, col):
         return self.start_puzzle[row][col]
@@ -280,7 +281,7 @@ class SudokuGame(object):
         for r, c in buddies:
             self.remove_candidate(r, c, answer, undo=False)
         if undo:
-            self.__save_undo_state()
+            self.save_undo_state()
 
     def __find_buddies(self, row, col):
         buddies = [] 
@@ -305,7 +306,7 @@ class SudokuGame(object):
             self.start_puzzle.append([])
             for j in range(9):
                 self.start_puzzle[i].append(self.puzzle[i][j])
-        self.__save_undo_state()
+        self.save_undo_state()
     
     def null_board(self):
         for i in range(9):
@@ -317,7 +318,7 @@ class SudokuGame(object):
         with open(file_name) as file:
             puzzles = [line.strip() for line in file]
             self.from_string(puzzles[line_number])
-        self.__save_undo_state()
+        self.save_undo_state()
 
     def generate(self, difficulty):
         self.board.generate(difficulty)
@@ -348,13 +349,13 @@ class SudokuGame(object):
         with open(file_name) as file:
             puzzles = [line.strip() for line in file]
             self.from_string(random.choice(puzzles))
-        self.__save_undo_state()
+        self.save_undo_state()
 
     def from_string(self, puzzle_string):
         self.board.update(puzzle_string)
         self.start_puzzle = self.board.get()
         self.start()
-        self.__save_undo_state()
+        self.save_undo_state()
     
     def check_win(self):
         for row in range(9):
@@ -529,8 +530,8 @@ class SudokuUI(tk.Frame):
             return
         else:
             for row, col, val in hint.good_cands:
-                self.game.set_cell(row, col, val)
-        
+                self.game.set_cell(row, col, val, undo=False)
+
         self.__draw_puzzle()
     
     def __undo(self, event):
