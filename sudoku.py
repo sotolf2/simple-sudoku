@@ -1,7 +1,7 @@
 import random
 from collections import deque, namedtuple
 from copy import deepcopy
-from tkinter import Tk, Canvas, Frame, Button, Menu, filedialog, simpledialog, messagebox, BOTH, TOP, BOTTOM, LEFT, RIGHT
+import tkinter as tk
 from textwrap import wrap
 from enum import Enum
 
@@ -19,12 +19,6 @@ class Mode(Enum):
     candidate = 2
     colour = 3
     colour_candidate = 4
-
-class SudokuError(Exception):
-    """
-    An application specific error.
-    """
-    pass
 
 class SudokuBoard(object):
     """
@@ -408,14 +402,14 @@ class SudokuGame(object):
         return self.__set_row(row).union(self.__set_column(col), self.__set_square(row // 3, col // 3))
 
     
-class SudokuUI(Frame):
+class SudokuUI(tk.Frame):
     """
     The Tkinter UI, responsible for drawing the board and accepting user input.
     """
     def __init__(self, parent, game):
         self.game = game
         self.parent = parent
-        Frame.__init__(self, parent)
+        tk.Frame.__init__(self, parent)
 
         self.margin =  20 # Pixels around the board
         self.side = 50 # Height of each board cell
@@ -435,21 +429,21 @@ class SudokuUI(Frame):
 
     def __initUI(self):
         self.parent.title("Simple Sudoku")
-        self.pack(fill=BOTH, expand=1)
+        self.pack(fill=tk.BOTH, expand=1)
 
         # Menubar
-        menubar = Menu(self.parent)
-        filemenu = Menu(menubar, tearoff=0)
+        menubar = tk.Menu(self.parent)
+        filemenu = tk.Menu(menubar, tearoff=0)
         filemenu.add_command(label="Open", command=self.__from_file)
         filemenu.add_command(label="Import from clipboard", command=self.__from_clip)
         menubar.add_cascade(label="File", menu=filemenu)
-        puzzlemenu = Menu(menubar, tearoff=0)
+        puzzlemenu = tk.Menu(menubar, tearoff=0)
         puzzlemenu.add_command(label="Calculate candidates", command=self.__calculate_candidates)
         puzzlemenu.add_command(label="Get hint", command=self.__hint)
         puzzlemenu.add_command(label="Reset", command=self.__clear_answers)
         puzzlemenu.add_command(label="Clear", command=self.__null_board)
         puzzlemenu.add_command(label="Set Origin", command=self.__to_origin)
-        generatemenu = Menu(puzzlemenu, tearoff=0)
+        generatemenu = tk.Menu(puzzlemenu, tearoff=0)
         generatemenu.add_command(label="Easy", command=self.__generate_easy)
         generatemenu.add_command(label="Medium", command=self.__generate_medium)
         generatemenu.add_command(label="Hard", command=self.__generate_hard)
@@ -457,13 +451,13 @@ class SudokuUI(Frame):
         generatemenu.add_command(label="Extreme", command=self.__generate_extreme)
         puzzlemenu.add_cascade(label="Generate", menu=generatemenu)
         menubar.add_cascade(label="Puzzle", menu=puzzlemenu)
-        collectionmenu = Menu(menubar, tearoff=0)
+        collectionmenu = tk.Menu(menubar, tearoff=0)
         collectionmenu.add_command(label="Next Puzzle", command=self.__next_puzzle)
         collectionmenu.add_command(label="Previous Puzzle", command=self.__previous_puzzle)
         collectionmenu.add_command(label="Go to specific Puzzle...", command=self.__goto_puzzle)
         collectionmenu.add_command(label="Random Puzzle", command=self.__random_from_file)
         menubar.add_cascade(label="Collection", menu=collectionmenu)
-        debugmenu = Menu(menubar, tearoff=0)
+        debugmenu = tk.Menu(menubar, tearoff=0)
         debugmenu.add_command(label="rotate90", command=self.__rotate90)
         debugmenu.add_command(label="flip horizontal", command=self.__flip_hor)
         debugmenu.add_command(label="flip vertical", command=self.__flip_vert)
@@ -471,8 +465,8 @@ class SudokuUI(Frame):
         menubar.add_cascade(label="Debug", menu=debugmenu)
         self.parent.config(menu=menubar)
 
-        self.canvas = Canvas(self, width=WIDTH, height=HEIGHT)
-        self.canvas.pack(fill=BOTH, expand=True)
+        self.canvas = tk.Canvas(self, width=WIDTH, height=HEIGHT)
+        self.canvas.pack(fill=tk.BOTH, expand=True)
 
         self.__draw_grid()
         self.__draw_puzzle()
@@ -571,13 +565,13 @@ class SudokuUI(Frame):
         self.__draw_puzzle()
 
     def __from_file(self):
-        self.file_name = filedialog.askopenfilename(title="Open puzzle file")
+        self.file_name = tk.filedialog.askopenfilename(title="Open puzzle file")
         self.puzzle_num = 0
         self.game.load_puzzle(self.file_name, self.puzzle_num)
         self.__draw_puzzle()
 
     def __goto_puzzle(self):
-        in_num = simpledialog.askinteger("Go to puzzle", "Go to which puzzle number")
+        in_num = tk.simpledialog.askinteger("Go to puzzle", "Go to which puzzle number")
         if in_num is not None:
             self.puzzle_num = in_num - 1
             self.game.load_puzzle(self.file_name, self.puzzle_num)
@@ -894,7 +888,7 @@ class SudokuUI(Frame):
             self.__draw_puzzle()
             self.__draw_cursor()
             if self.game.check_win():
-                messagebox.showinfo("Completed", "Congratulations, you solved the puzzle!")
+                tk.messagebox.showinfo("Completed", "Congratulations, you solved the puzzle!")
         elif event.char == " ":
             self.__toggle_mode_candidate()
             self.__draw_cursor()
@@ -932,7 +926,7 @@ if __name__ == '__main__':
     game = SudokuGame()
     game.start()
 
-    root = Tk()
+    root = tk.Tk()
     SudokuUI(root,game)
     root.geometry("{}x{}".format(WIDTH, HEIGHT))
     root.mainloop()
