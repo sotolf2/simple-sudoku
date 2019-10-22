@@ -2,6 +2,7 @@ import random
 from collections import deque, namedtuple
 from copy import deepcopy
 import tkinter as tk
+from tkinter import messagebox, simpledialog
 from textwrap import wrap
 from enum import Enum
 
@@ -124,13 +125,16 @@ class HintEngine(object):
         for row in range(9):
             for col in range(9):
                 cands = self.game.get_candidates(row, col)
-                if len(cands) == 1:
+                if len(cands) == 1 and self.game.get_cell(row, col) == 0:
                     good_cells.append((row,col))
                     good_cands.append((row,col,cands[0]))
         
         if len(good_cells) > 0:
             self.hint = Hint("Naked single", good_cells, None, good_cands, None, "The only number that can go in this cell is")
 
+    def get_naked(self):
+        self.__naked_single()
+        return self.hint
 
 class SudokuGame(object):
     """
@@ -224,6 +228,9 @@ class SudokuGame(object):
 
     def get_candidates(self, row, col):
         return list(self.candidates[row][col])
+    
+    def get_candidate_set(self,row, col):
+        return self.candidates
     
     def get_cell_colour(self, row, col):
         return COLOURS[self.colours[row][col]]
@@ -424,6 +431,7 @@ class SudokuUI(tk.Frame):
         self.puzzle_num = 0
         self.file_name = ""
         self.technique = ""
+        self.autosolve_naked_singles = tk.BooleanVar(value=False)
 
         self.__initUI()
 
@@ -440,6 +448,7 @@ class SudokuUI(tk.Frame):
         puzzlemenu = tk.Menu(menubar, tearoff=0)
         puzzlemenu.add_command(label="Calculate candidates", command=self.__calculate_candidates)
         puzzlemenu.add_command(label="Get hint", command=self.__hint)
+        puzzlemenu.add_checkbutton(label="Autosolve naked singles", onvalue=True, offvalue=0, variable=self.autosolve_naked_singles)
         puzzlemenu.add_command(label="Reset", command=self.__clear_answers)
         puzzlemenu.add_command(label="Clear", command=self.__null_board)
         puzzlemenu.add_command(label="Set Origin", command=self.__to_origin)
@@ -514,6 +523,16 @@ class SudokuUI(tk.Frame):
         self.highlight = 0
         self.__draw_puzzle()
     
+    def __autofill_naked_singles(self):
+        hint = HintEngine(self.game).get_naked()
+        if hint is None:
+            return
+        else:
+            for row, col, val in hint.good_cands:
+                self.game.set_cell(row, col, val)
+        
+        self.__draw_puzzle()
+    
     def __undo(self, event):
         self.game.undo()
         self.__draw_puzzle()
@@ -571,7 +590,7 @@ class SudokuUI(tk.Frame):
         self.__draw_puzzle()
 
     def __goto_puzzle(self):
-        in_num = tk.simpledialog.askinteger("Go to puzzle", "Go to which puzzle number")
+        in_num = simpledialog.askinteger("Go to puzzle", "Go to which puzzle number")
         if in_num is not None:
             self.puzzle_num = in_num - 1
             self.game.load_puzzle(self.file_name, self.puzzle_num)
@@ -716,6 +735,9 @@ class SudokuUI(tk.Frame):
         if self.technique != "":
             self.canvas.create_text(pix, piy, text=puzzle_info, tags="hint", fill="gray", font=("Arial", 12))
         
+        # If we're autosolving singles, check once more
+        if self.autosolve_naked_singles.get():
+            self.__autofill_naked_singles()
 
     def __get_candidate_pos(self, row, col, candidate):
         diff = self.candidatediff
@@ -888,7 +910,8 @@ class SudokuUI(tk.Frame):
             self.__draw_puzzle()
             self.__draw_cursor()
             if self.game.check_win():
-                tk.messagebox.showinfo("Completed", "Congratulations, you solved the puzzle!")
+                messagebox.showinfo("Completed", "Congratulations, you solved the puzzle!")
+
         elif event.char == " ":
             self.__toggle_mode_candidate()
             self.__draw_cursor()
