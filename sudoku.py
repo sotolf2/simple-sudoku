@@ -1,5 +1,5 @@
 import random
-from collections import deque, namedtuple
+from collections import deque, namedtuple, Counter
 from copy import deepcopy
 import tkinter as tk
 from tkinter import messagebox, simpledialog
@@ -109,7 +109,10 @@ class HintEngine(object):
     def __init__(self, game):
         self.hint = None
         self.game = game
-        self.techs = [self.__naked_single]
+        self.techs = [
+            self.__naked_single,
+            self.__hidden_single
+        ]
     
     def get_hint(self):
         for tech in self.techs:
@@ -131,6 +134,95 @@ class HintEngine(object):
         
         if len(good_cells) > 0:
             self.hint = Hint("Naked single", good_cells, None, good_cands, None, "The only number that can go in this cell is")
+    
+    def __hidden_single(self):
+        searches = [
+            self.__hs_search_box,
+            self.__hs_search_row,
+            self.__hs_search_col
+        ]
+        for search in searches:
+            search()
+            if self.hint is None:
+                continue
+            else:
+                return
+    
+    def __hs_search_box(self):
+        for box_no in range(1,10):
+            coords = self.__get_box_coords(box_no)
+            found, (coord, cand) = self.__hs_search(coords)
+            if found:
+                row, col = coord
+                self.hint = Hint("Hidden single (box)", coords, None, ((row, col, cand),), None, "In the box this is the only cell with this candidate")
+                return
+
+    def __hs_search_row(self):
+        for row in range(9):
+            coords = self.__get_row_coords(row)
+            found, (coord, cand) = self.__hs_search(coords)
+            if found:
+                row, col = coord
+                self.hint = Hint("Hidden single (row)", coords, None, ((row, col, cand),), None, "In the row this candidate can only be here" )
+                return
+
+    def __hs_search_col(self):
+        for col in range(9):
+            coords = self.__get_col_coords(col)
+            found, (coord, cand) = self.__hs_search(coords)
+            if found:
+                row, col = coord
+                self.hint = Hint("Hidden single (column)", coords, None, ((row, col, cand),), None, "In the column this candidate can only be here" )
+                return
+
+    def __hs_search(self, coords):
+        cnt = Counter()
+        search_coords = [ (row, col) for row, col in coords if self.game.get_cell(row,col) == 0]
+        for row, col in search_coords:
+            cnt.update(self.game.get_candidates(row, col))
+        
+        for i in range(1,10):
+            if cnt[i] == 1:
+                for row, col in search_coords:
+                    if i in self.game.get_candidates(row, col):
+                        return (True, ((row,col), i))
+        return (False, (None, None))
+
+    def __get_box_coords(self, box_no):
+        coords = [
+            None,
+            # Box 1
+            ((0,0),(0,1),(0,2),(1,0),(1,1),(1,2),(2,0),(2,1),(2,2)),
+            # Box 2
+            ((0,3),(0,4),(0,5),(1,3),(1,4),(1,5),(2,3),(2,4),(2,5)),
+            # Box 3
+            ((0,6),(0,7),(0,8),(1,6),(1,7),(1,8),(2,6),(2,7),(2,8)),
+            # Box 4
+            ((3,0),(3,1),(3,2),(4,0),(4,1),(4,2),(5,0),(5,1),(5,2)),
+            # Box 5
+            ((3,3),(3,4),(3,5),(4,3),(4,4),(4,5),(5,3),(5,4),(5,5)),
+            # Box 6
+            ((3,6),(3,7),(3,8),(4,6),(4,7),(4,8),(5,6),(5,7),(5,8)),
+            # Box 7
+            ((6,0),(6,1),(6,2),(7,0),(7,1),(7,2),(8,0),(8,1),(8,2)),
+            # Box 8
+            ((6,3),(6,4),(6,5),(7,3),(7,4),(7,5),(8,3),(8,4),(8,5)),
+            # Box 9
+            ((6,6),(6,7),(6,8),(7,6),(7,7),(7,8),(8,6),(8,7),(8,8)),
+        ]
+        return coords[box_no]
+
+    def __get_row_coords(self, row):
+        coords = []
+        for i in range(9):
+            coords.append((row,i))
+        return tuple(coords)
+    
+    def __get_col_coords(self, col):
+        coords = []
+        for i in range(9):
+            coords.append((i, col))
+        return tuple(coords)
 
     def get_naked(self):
         self.__naked_single()
