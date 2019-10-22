@@ -103,7 +103,7 @@ class SudokuBoard(object):
                     new_board[i][j] = 0
         self.board = new_board
 
-Hint = namedtuple('Hint', "technique good_cells bad_cells good_cands bad_cands text")
+Hint = namedtuple('Hint', "technique cells1 cells2 good_cands bad_cands text")
 
 class HintEngine(object):
     """
@@ -148,7 +148,7 @@ class SudokuGame(object):
         self.board = SudokuBoard("0" * 81)
         self.puzzle = self.board.get()
         self.start_puzzle = self.board.get()
-        self.candidates = [[[False for z in range(10)] for x in range(9)] for y in range(9)]
+        self.candidates = [[set() for x in range(9)] for y in range(9)]
         self.undostack = deque()
         self.null_board()
         self.current_to_origin()
@@ -157,7 +157,7 @@ class SudokuGame(object):
 
     def start(self):
         self.game_over = False
-        self.candidates = [[[False for z in range(10)] for x in range(9)] for y in range(9)]
+        self.candidates = [[set() for x in range(9)] for y in range(9)]
         self.puzzle = []
         self.colours = [[0 for i in range(9)] for j in range(9)]
         self.candidate_colours = [[[0 for x in range(10)] for y in range(9)] for z in range(9)]
@@ -179,15 +179,15 @@ class SudokuGame(object):
         if hint is None:
             return
 
-        if not hint.good_cells is None:
-            for cell in hint.good_cells:
+        if not hint.cells1 is None:
+            for cell in hint.cells1:
                 row, col = cell
-                self.colours[row][col] = 1
+                self.colours[row][col] = 3
 
-        if not hint.bad_cells is None:
-            for cell in hint.bad_cells:
+        if not hint.cells2 is None:
+            for cell in hint.cells2:
                 row, col = cell
-                self.colours[row][col] = 2
+                self.colours[row][col] = 4
 
         if not hint.good_cands is None:
             for cand in hint.good_cands:
@@ -198,6 +198,8 @@ class SudokuGame(object):
             for cand in hint.bad_cands:
                 row, col, cand = cand
                 self.candidate_colours[row][col][cand] = 2
+        
+        return hint.technique
 
     def undo(self):
         self.puzzle, self.start_puzzle, self.candidates, self.colours, self.candidate_colours = self.undostack.pop()
@@ -227,11 +229,7 @@ class SudokuGame(object):
 
 
     def get_candidates(self, row, col):
-        candidates = []
-        for i in range(1,10):
-            if self.candidates[row][col][i]:
-                candidates.append(i)
-        return candidates
+        return list(self.candidates[row][col])
     
     def get_cell_colour(self, row, col):
         return COLOURS[self.colours[row][col]]
@@ -251,7 +249,10 @@ class SudokuGame(object):
 
 
     def toggle_candidate(self, row, col, val, undo=True):
-        self.candidates[row][col][val] = not self.candidates[row][col][val]
+        if val not in self.candidates[row][col]:
+            self.candidates[row][col].add(val)
+        else:
+            self.candidates[row][col].remove(val)
         if undo:
             self.__save_undo_state()
 
@@ -260,12 +261,12 @@ class SudokuGame(object):
         self.candidate_colours = [[[0 for x in range(10)] for y in range(9)] for z in range(9)]
     
     def remove_candidate(self, row, col, val, undo=True):
-        self.candidates[row][col][val] = False
+        self.candidates[row][col].discard(val)
         if undo:
             self.__save_undo_state()
     
     def add_candidate(self, row, col, val, undo=True):
-        self.candidates[row][col][val] = True
+        self.candidates[row][col].add(val)
         if undo:    
             self.__save_undo_state()
 
@@ -428,6 +429,7 @@ class SudokuUI(Frame):
         self.highlight = 0
         self.puzzle_num = 0
         self.file_name = ""
+        self.technique = ""
 
         self.__initUI()
 
@@ -492,6 +494,7 @@ class SudokuUI(Frame):
         self.canvas.bind("<e>", self.__erase_colouring)
         self.canvas.bind("<f>", self.__toggle_mode_colour_candidate)
         self.canvas.bind("<c>", self.__calculate_candidates)
+        self.canvas.bind("<h>", self.__hint)
 
         self.canvas.bind("<F1>", self.__toggle_highlight)
         self.canvas.bind("<F2>", self.__toggle_highlight)
@@ -509,10 +512,12 @@ class SudokuUI(Frame):
     
     def __erase_colouring(self, event):
         self.game.reset_colours()
+        self.technique = ""
         self.__draw_puzzle()
 
-    def __hint(self):
-        self.game.hint()
+    def __hint(self, event=None):
+        self.technique = self.game.hint()
+        self.highlight = 0
         self.__draw_puzzle()
     
     def __undo(self, event):
@@ -659,6 +664,7 @@ class SudokuUI(Frame):
         self.canvas.delete("puzzleinfo")
         self.canvas.delete("cellcolouring")
         self.canvas.delete("candidatecolour")
+        self.canvas.delete("hint")
         for i in range(9):
             for j in range(9):
                 x0 = self.margin + j * self.side + 1
@@ -680,7 +686,7 @@ class SudokuUI(Frame):
 
                 # Then draw cell colouring
                 colour = self.game.get_cell_colour(i,j)
-                if not colour is None:
+                if not colour is None and answer == 0:
                     self.canvas.create_rectangle(x0, y0, x1, y1, tags="cellcolouring", fill=colour , outline=colour)
                 
                 if answer != 0:
@@ -709,6 +715,13 @@ class SudokuUI(Frame):
             else:
                 puzzle_info = "{}: {}".format(collection_name, self.puzzle_num + 1)
         self.canvas.create_text(pix, piy, text=puzzle_info, tags="puzzleinfo", fill="gray", font=("Arial", 12))
+
+        # Write the name of the Technique that was hinted in the top middle
+        piy = self.margin / 2
+        puzzle_info = "Hint: {}".format(self.technique)
+        if self.technique != "":
+            self.canvas.create_text(pix, piy, text=puzzle_info, tags="hint", fill="gray", font=("Arial", 12))
+        
 
     def __get_candidate_pos(self, row, col, candidate):
         diff = self.candidatediff
