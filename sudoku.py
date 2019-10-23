@@ -112,6 +112,7 @@ class HintEngine(object):
         self.techs = [
             self.__naked_single,
             self.__hidden_single,
+            self.__naked_pair,
             self.__pointing,
             self.__box_line_reduction
         ]
@@ -123,6 +124,86 @@ class HintEngine(object):
                 break
         
         return self.hint
+
+    def __naked_pair(self):
+        # boxes first
+        for box_no in range(1,10):
+            coords = self.__get_box_coords(box_no)
+            pairs = [(frozenset(self.game.get_candidates(row, col)), (row, col)) for row, col in coords if len(self.game.get_candidates(row, col)) == 2]
+            if not pairs:
+                continue
+            pair_coords = self.__get_pair_coords(pairs)
+            for pair, cur_coords in pair_coords.items():
+                if len(cur_coords) == 2:
+                    # Affecting row
+                    x, y = tuple(pair)
+                    rows = set([row for row,col in cur_coords])
+                    if len(rows) == 1:
+                        cells1 = coords + self.__get_row_coords(list(rows)[0])
+                        self.__create_pair_hint(x,y,cells1, cur_coords)
+                        if not self.hint is None:
+                            return
+
+                    # Affecting column
+                    cols = set([col for row,col in cur_coords])
+                    if len(cols) == 1:
+                        cells1 = coords + self.__get_col_coords(list(cols)[0])
+                        self.__create_pair_hint(x,y,cells1, cur_coords)
+                        if not self.hint is None:
+                            return
+
+                    # Only box
+                    cells1 = coords
+                    self.__create_pair_hint(x,y, cells1, cur_coords)
+                    if not self.hint is None:
+                        return
+
+        # Then rows
+        for row in range(9):
+            coords = self.__get_row_coords(row)
+            pairs = [(frozenset(self.game.get_candidates(row, col)), (row, col)) for row, col in coords if len(self.game.get_candidates(row, col)) == 2]
+            if not pairs:
+                continue
+            pair_coords = self.__get_pair_coords(pairs)
+            for pair, cur_coords in pair_coords.items():
+                if len(cur_coords) == 2:
+                    cells1 = coords
+                    self.__create_pair_hint(x,y, cells1, cur_coords)
+                    if not self.hint is None:
+                        return
+
+        # At last columns
+        for col in range(9):
+            coords = self.__get_col_coords(col)
+            pairs = [(frozenset(self.game.get_candidates(row, col)), (row, col)) for row, col in coords if len(self.game.get_candidates(row, col)) == 2]
+            if not pairs:
+                continue
+            pair_coords = self.__get_pair_coords(pairs)
+            for pair, cur_coords in pair_coords.items():
+                if len(cur_coords) == 2:
+                    cells1 = coords
+                    self.__create_pair_hint(x, y, cells1, cur_coords)
+                    if not self.hint is None:
+                        return
+    
+    def __create_pair_hint(self, x, y, cells1, cur_coords):
+        good_cands = [(row, col, x) for row, col in cur_coords] + [(row, col, y) for row, col in cur_coords]
+        bad_x = [(row, col, x) for row, col in cells1 if (row, col) not in cur_coords and x in self.game.get_candidates(row, col)]
+        bad_y = [(row, col, y) for row, col in cells1 if (row, col) not in cur_coords and y in self.game.get_candidates(row, col)] 
+        bad_cands = bad_x + bad_y
+        if not bad_cands:
+            return
+        self.hint = Hint("Naked pair {} {}".format(x, y), cells1, None, good_cands, bad_cands, "Naked pair")
+
+    def __get_pair_coords(self, pairs):
+        pair_coords = {}
+        for pair, coord in pairs:
+            if pair in pair_coords:
+                pair_coords[pair].append(coord)
+            else:
+                pair_coords[pair] = [coord]
+        
+        return pair_coords
 
     def __box_line_reduction(self):
         # First check rows
