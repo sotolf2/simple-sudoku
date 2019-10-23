@@ -112,7 +112,8 @@ class HintEngine(object):
         self.techs = [
             self.__naked_single,
             self.__hidden_single,
-            self.__pointing
+            self.__pointing,
+            self.__box_line_reduction
         ]
     
     def get_hint(self):
@@ -123,19 +124,63 @@ class HintEngine(object):
         
         return self.hint
 
+    def __box_line_reduction(self):
+        # First check rows
+        for row in range(9):
+            coords = self.__get_row_coords(row)
+            self.__search_bl_reduction(coords)
+
+        if not self.hint is None:
+            return
+        # Then columns
+        for col in range(9):
+            coords = self.__get_col_coords(col)
+            self.__search_bl_reduction(coords)
+
+    def __search_bl_reduction(self,coords):
+        candidate_coords = self.__get_candidate_coords(coords)
+
+        for candidate in range(1,10):
+            cur_coords = candidate_coords.get(candidate, None)
+
+            if cur_coords is None:
+                continue
+
+            boxes = set()
+            for row, col in cur_coords:
+                boxes.add(self.__get_box(row, col))
+            
+            # Are all of the candidates in the same box?
+            if len(boxes) == 1:
+                # Do we have any candidates to delete in that box
+                box_coords = [cell for cell in self.__get_box_coords(list(boxes)[0]) if cell not in cur_coords]
+                bad_cands = [(row, col, candidate) for (row, col) in box_coords if candidate in self.game.get_candidates(row, col)]
+                if not bad_cands:
+                    continue
+                good_cands = [(row, col, candidate) for (row, col) in cur_coords]
+                cells1 = coords + box_coords
+
+                self.hint = Hint("Box-line reduction", cells1, None, good_cands, bad_cands, "Box line interaction")
+                return
+
+
+            
+    def __get_box(self, row, col):
+        box_row = row // 3
+        box_col = col // 3
+
+        boxes = [
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 9]
+        ]
+
+        return boxes[box_row][box_col]
+
     def __pointing(self):
         for box_no in range(1,10):
             coords = self.__get_box_coords(box_no)
-            candidate_coords = {}
-            
-            # Build list of locations where each candidate can be
-            for row, col in coords:
-                candidates = self.game.get_candidates(row, col)
-                for candidate in candidates:
-                    if candidate in candidate_coords:
-                        candidate_coords[candidate].append((row, col))
-                    else:
-                        candidate_coords[candidate] = [(row, col)]
+            candidate_coords = self.__get_candidate_coords(coords)
 
             # Go through each candidate to see if it is pointing
             for candidate in range(1,10):
@@ -159,6 +204,7 @@ class HintEngine(object):
                         good_cands = [(row, col, candidate) for (row, col) in cur_coords]
                         cells1 = coords + row_coords
                         self.hint = Hint("Pointing Pair/Triple (row)", cells1, None, good_cands, bad_cands, "Pointing Pair/Triple reduces row")
+                        return
 
                     cols = set([col for row, col in cur_coords])
                     if len(cols) == 1:
@@ -171,6 +217,19 @@ class HintEngine(object):
                         good_cands = [(row, col, candidate) for (row, col) in cur_coords]
                         cells1 = coords + col_coords
                         self.hint = Hint("Pointing Pair/Triple (column)", cells1, None, good_cands, bad_cands, "Pointing Pair/Triple reduces row")
+                        return
+
+    def __get_candidate_coords(self, coords):
+        candidate_coords = {}
+        # Build list of locations where each candidate can be
+        for row, col in coords:
+            candidates = self.game.get_candidates(row, col)
+            for candidate in candidates:
+                if candidate in candidate_coords:
+                    candidate_coords[candidate].append((row, col))
+                else:
+                    candidate_coords[candidate] = [(row, col)]
+        return candidate_coords
 
     def __naked_single(self):
         good_cells = []
