@@ -111,7 +111,8 @@ class HintEngine(object):
         self.game = game
         self.techs = [
             self.__naked_single,
-            self.__hidden_single
+            self.__hidden_single,
+            self.__pointing
         ]
     
     def get_hint(self):
@@ -121,6 +122,55 @@ class HintEngine(object):
                 break
         
         return self.hint
+
+    def __pointing(self):
+        for box_no in range(1,10):
+            coords = self.__get_box_coords(box_no)
+            candidate_coords = {}
+            
+            # Build list of locations where each candidate can be
+            for row, col in coords:
+                candidates = self.game.get_candidates(row, col)
+                for candidate in candidates:
+                    if candidate in candidate_coords:
+                        candidate_coords[candidate].append((row, col))
+                    else:
+                        candidate_coords[candidate] = [(row, col)]
+
+            # Go through each candidate to see if it is pointing
+            for candidate in range(1,10):
+                cur_coords = candidate_coords.get(candidate, None)
+
+                if cur_coords is None:
+                    continue
+                
+                # Filter out already answered cells
+                # Can only be pointing if 2 or three candidates
+                if len(cur_coords) == 2 or len(cur_coords) == 3:
+                    # are we row pointing
+                    rows = set([row for row, col in cur_coords])
+                    if len(rows) == 1:
+                        # we are pointing in a row, are we pointing at something that we can delete?
+                        row_coords = self.__get_row_coords(list(rows)[0])
+                        row_coords = [(row, col) for row, col in row_coords if (row, col) not in cur_coords]
+                        bad_cands = [(row, col, candidate) for (row, col) in row_coords if candidate in self.game.get_candidates(row, col)]
+                        if not bad_cands:
+                            continue
+                        good_cands = [(row, col, candidate) for (row, col) in cur_coords]
+                        cells1 = coords + row_coords
+                        self.hint = Hint("Pointing Pair/Triple (row)", cells1, None, good_cands, bad_cands, "Pointing Pair/Triple reduces row")
+
+                    cols = set([col for row, col in cur_coords])
+                    if len(cols) == 1:
+                        # we are pointing in a column, are we pointing at something we can delete?
+                        col_coords = self.__get_col_coords(list(cols)[0])
+                        col_coords = [(row, col) for row, col in col_coords if (row, col) not in cur_coords]
+                        bad_cands = [(row, col, candidate) for (row, col) in col_coords if candidate in self.game.get_candidates(row, col)]
+                        if not bad_cands:
+                            continue
+                        good_cands = [(row, col, candidate) for (row, col) in cur_coords]
+                        cells1 = coords + col_coords
+                        self.hint = Hint("Pointing Pair/Triple (column)", cells1, None, good_cands, bad_cands, "Pointing Pair/Triple reduces row")
 
     def __naked_single(self):
         good_cells = []
@@ -210,19 +260,19 @@ class HintEngine(object):
             # Box 9
             ((6,6),(6,7),(6,8),(7,6),(7,7),(7,8),(8,6),(8,7),(8,8)),
         ]
-        return coords[box_no]
+        return [(row, col) for row, col in coords[box_no] if self.game.get_cell(row, col) == 0]
 
     def __get_row_coords(self, row):
         coords = []
         for i in range(9):
             coords.append((row,i))
-        return tuple(coords)
+        return [(row, col) for row, col in coords if self.game.get_cell(row, col) == 0]
     
     def __get_col_coords(self, col):
         coords = []
         for i in range(9):
             coords.append((i, col))
-        return tuple(coords)
+        return [(row, col) for row, col in coords if self.game.get_cell(row, col) == 0]
 
     def get_naked(self):
         self.__naked_single()
