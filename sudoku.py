@@ -3,6 +3,7 @@ from collections import deque, namedtuple, Counter
 from copy import deepcopy
 import tkinter as tk
 from tkinter import messagebox, simpledialog
+import itertools as it
 from textwrap import wrap
 from enum import Enum
 
@@ -113,8 +114,9 @@ class HintEngine(object):
             self.__naked_single,
             self.__hidden_single,
             self.__naked_pair,
+            self.__naked_triple,
             self.__pointing,
-            self.__box_line_reduction
+            self.__box_line_reduction,
         ]
     
     def get_hint(self):
@@ -124,6 +126,93 @@ class HintEngine(object):
                 break
         
         return self.hint
+
+    def __naked_triple(self):
+        # boxes first
+        for box_no in range(1,10):
+            coords = self.__get_box_coords(box_no)
+            triplets = [(frozenset(self.game.get_candidates(row, col)), (row, col)) for row, col in coords if len(self.game.get_candidates(row, col)) <= 3]
+            if not triplets:
+                continue
+            triplet_coords = self.__get_triplet_coords(triplets)
+            if not triplet_coords:
+                continue
+            for triplet, cur_coords in triplet_coords.items():
+                x, y, z = tuple(triplet)
+                # Affecting row
+                rows = set([row for row, col in cur_coords])
+                if len(rows) == 1:
+                    cells1 = coords + self.__get_row_coords(list(rows)[0])
+                    self.__create_triple_hint(x,y,z, cells1, cur_coords)
+                    if not self.hint is None:
+                        return
+
+                # Affecting column
+                cols = set([col for row, col in cur_coords])
+                if len(cols) == 1:
+                    cells1 = coords + self.__get_col_coords(list(cols)[0])
+                    self.__create_triple_hint(x,y,z, cells1, cur_coords)
+                    if not self.hint is None:
+                        return
+
+                # Only box
+                cells1 = coords
+                self.__create_triple_hint(x,y,z, cells1, cur_coords)
+                if not self.hint is None:
+                    return
+        
+        # Then rows
+        for row in range(9):
+            coords = self.__get_row_coords(row)
+            triplets = [(frozenset(self.game.get_candidates(row, col)), (row, col)) for row, col in coords if len(self.game.get_candidates(row, col)) <= 3]
+            if not triplets:
+                continue
+            triplet_coords = self.__get_triplet_coords(triplets)
+            if not triplet_coords:
+                continue
+            for triplet, cur_coords in triplet_coords.items():
+                x, y, z = tuple(triplet)
+                cells1 = coords
+                self.__create_triple_hint(x,y,z, cells1, cur_coords)
+                if not self.hint is None:
+                    return
+
+
+        # Then colums
+        for col in range(9):
+            coords = self.__get_col_coords(col)
+            triplets = [(frozenset(self.game.get_candidates(row, col)), (row, col)) for row, col in coords if len(self.game.get_candidates(row, col)) <= 3]
+            if not triplets:
+                continue
+            triplet_coords = self.__get_triplet_coords(triplets)
+            if not triplet_coords:
+                continue
+            for triplet, cur_coords in triplet_coords.items():
+                x, y, z = tuple(triplet)
+                cells1 = coords
+                self.__create_triple_hint(x,y,z, cells1, cur_coords)
+                if not self.hint is None:
+                    return
+
+    def __create_triple_hint(self, x, y, z, cells1, cur_coords):
+        good_cands = [(row, col, x) for row, col in cur_coords] + [(row, col, y) for row, col in cur_coords] + [(row, col, z) for row, col in cur_coords]
+        bad_x = [(row, col, x) for row, col in cells1 if (row, col) not in cur_coords and x in self.game.get_candidates(row, col)]
+        bad_y = [(row, col, y) for row, col in cells1 if (row, col) not in cur_coords and y in self.game.get_candidates(row, col)] 
+        bad_z = [(row, col, z) for row, col in cells1 if (row, col) not in cur_coords and z in self.game.get_candidates(row, col)] 
+        bad_cands = bad_x + bad_y + bad_z
+        if not bad_cands:
+            return
+        self.hint = Hint("Naked triple {} {} {}".format(x, y, z), cells1, None, good_cands, bad_cands, "Naked triple")
+    
+    def __get_triplet_coords(self, triplets):
+        triplet_coords = {}
+        combinations = it.combinations(triplets, 3)
+        for a, b, c in combinations:
+            union = a[0].union(b[0], c[0])
+            if len(union) == 3:
+                triplet_coords[union] = [a[1], b[1], c[1]]
+
+        return triplet_coords
 
     def __naked_pair(self):
         # boxes first
@@ -195,7 +284,7 @@ class HintEngine(object):
         bad_cands = bad_x + bad_y
         if not bad_cands:
             return
-        self.hint = Hint("Naked pair {} {}".format(x, y), cells1, cur_coords, good_cands, bad_cands, "Naked pair")
+        self.hint = Hint("Naked pair {} {}".format(x, y), cells1, None, good_cands, bad_cands, "Naked pair")
 
     def __get_pair_coords(self, pairs):
         pair_coords = {}
