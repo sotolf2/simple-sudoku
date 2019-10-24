@@ -115,6 +115,7 @@ class HintEngine(object):
             self.__hidden_single,
             self.__naked_pair,
             self.__naked_triple,
+            self.__hidden_pair,
             self.__naked_quad,
             self.__pointing,
             self.__box_line_reduction,
@@ -127,6 +128,70 @@ class HintEngine(object):
                 break
         
         return self.hint
+
+    def __hidden_pair(self):
+        # boxes first
+        for box_no in range(1,10):
+            coords = self.__get_box_coords(box_no) 
+            self.__search_hidden_pair(coords)
+            if not self.hint is None:
+                return
+        # then rows
+        for row in range(9):
+            coords = self.__get_row_coords(row)
+            self.__search_hidden_pair(coords)
+            if not self.hint is None:
+                return
+        
+        for col in range(9):
+            coords = self.__get_col_coords(col)
+            self.__search_hidden_pair(coords)
+
+    def __search_hidden_pair(self, coords):
+        coord_places = self.__get_candidate_positions(coords)
+        places = {cand: frozenset(cur_coords) for cand, cur_coords in coord_places.items() if len(cur_coords) == 2 }
+        if len(places) < 2:
+            return
+        place_cands = {}
+        for cand, coord_set in places.items():
+            if coord_set in place_cands:
+                place_cands[coord_set].append(cand)
+            else:
+                place_cands[coord_set] = [cand]
+        
+        for cur_coords, cands in place_cands.items():
+            if len(cands) == 2:
+                cur_coords = list(cur_coords)
+                bad_cands = []
+                for row,col in cur_coords:
+                    for cand in self.game.get_candidates(row, col):
+                        if cand not in cands:
+                            bad_cands.append((row, col, cand))
+                if not bad_cands:
+                    continue
+                cells1 = coords
+                good_cands = []
+                for row,col in cur_coords:
+                    for cand in cands:
+                        good_cands.append((row, col, cand))
+                self.hint = Hint("Hidden pair {} {}".format(cands[0], cands[1]), cells1, None, good_cands, bad_cands, "Hidden pair")
+                return
+                
+
+    def __get_candidate_positions(self, coords):
+        coord_cand = {(row, col): self.game.get_candidates(row, col) for row, col in coords}
+
+        cand_coord = {}
+        for coord, cands in coord_cand.items():
+            for cand in cands:
+                if cand in cand_coord:
+                    cand_coord[cand].append(coord)
+                else:
+                    cand_coord[cand] = [coord]
+        
+        return cand_coord
+
+
 
     def __naked_triple(self):
         # boxes first
