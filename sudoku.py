@@ -134,9 +134,9 @@ class HintEngine(object):
                 continue
             pair_coords = self.__get_pair_coords(pairs)
             for pair, cur_coords in pair_coords.items():
+                x, y = tuple(pair)
                 if len(cur_coords) == 2:
                     # Affecting row
-                    x, y = tuple(pair)
                     rows = set([row for row,col in cur_coords])
                     if len(rows) == 1:
                         cells1 = coords + self.__get_row_coords(list(rows)[0])
@@ -166,6 +166,7 @@ class HintEngine(object):
                 continue
             pair_coords = self.__get_pair_coords(pairs)
             for pair, cur_coords in pair_coords.items():
+                x, y = tuple(pair)
                 if len(cur_coords) == 2:
                     cells1 = coords
                     self.__create_pair_hint(x,y, cells1, cur_coords)
@@ -180,6 +181,7 @@ class HintEngine(object):
                 continue
             pair_coords = self.__get_pair_coords(pairs)
             for pair, cur_coords in pair_coords.items():
+                x, y = tuple(pair)
                 if len(cur_coords) == 2:
                     cells1 = coords
                     self.__create_pair_hint(x, y, cells1, cur_coords)
@@ -193,7 +195,7 @@ class HintEngine(object):
         bad_cands = bad_x + bad_y
         if not bad_cands:
             return
-        self.hint = Hint("Naked pair {} {}".format(x, y), cells1, None, good_cands, bad_cands, "Naked pair")
+        self.hint = Hint("Naked pair {} {}".format(x, y), cells1, cur_coords, good_cands, bad_cands, "Naked pair")
 
     def __get_pair_coords(self, pairs):
         pair_coords = {}
