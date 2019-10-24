@@ -115,6 +115,7 @@ class HintEngine(object):
             self.__hidden_single,
             self.__naked_pair,
             self.__naked_triple,
+            self.__naked_quad,
             self.__pointing,
             self.__box_line_reduction,
         ]
@@ -213,6 +214,94 @@ class HintEngine(object):
                 triplet_coords[union] = [a[1], b[1], c[1]]
 
         return triplet_coords
+
+    def __naked_quad(self):
+        # boxes first
+        for box_no in range(1,10):
+            coords = self.__get_box_coords(box_no)
+            quads = [(frozenset(self.game.get_candidates(row, col)), (row, col)) for row, col in coords if len(self.game.get_candidates(row, col)) <= 4]
+            if not quads:
+                continue
+            quad_coords = self.__get_quad_coords(quads)
+            if not quad_coords:
+                continue
+            for quad, cur_coords in quad_coords.items():
+                x, y, z, a = tuple(quad)
+                # Affecting row
+                rows = set([row for row, col in cur_coords])
+                if len(rows) == 1:
+                    cells1 = coords + self.__get_row_coords(list(rows)[0])
+                    self.__create_quad_hint(x,y,z,a, cells1, cur_coords)
+                    if not self.hint is None:
+                        return
+
+                # Affecting column
+                cols = set([col for row, col in cur_coords])
+                if len(cols) == 1:
+                    cells1 = coords + self.__get_col_coords(list(cols)[0])
+                    self.__create_quad_hint(x,y,z,a, cells1, cur_coords)
+                    if not self.hint is None:
+                        return
+
+                # Only box
+                cells1 = coords
+                self.__create_quad_hint(x,y,z,a, cells1, cur_coords)
+                if not self.hint is None:
+                    return
+        
+        # Then rows
+        for row in range(9):
+            coords = self.__get_row_coords(row)
+            quads = [(frozenset(self.game.get_candidates(row, col)), (row, col)) for row, col in coords if len(self.game.get_candidates(row, col)) <= 4]
+            if not quads:
+                continue
+            quad_coords = self.__get_quad_coords(quads)
+            if not quad_coords:
+                continue
+            for quad, cur_coords in quad_coords.items():
+                x, y, z, a = tuple(quad)
+                cells1 = coords
+                self.__create_quad_hint(x,y,z,a, cells1, cur_coords)
+                if not self.hint is None:
+                    return
+
+
+        # Then colums
+        for col in range(9):
+            coords = self.__get_col_coords(col)
+            quads = [(frozenset(self.game.get_candidates(row, col)), (row, col)) for row, col in coords if len(self.game.get_candidates(row, col)) <= 4]
+            if not quads:
+                continue
+            quad_coords = self.__get_quad_coords(quad)
+            if not quad_coords:
+                continue
+            for quad, cur_coords in quad_coords.items():
+                x, y, z, a = tuple(quad)
+                cells1 = coords
+                self.__create_quad_hint(x,y,z,a, cells1, cur_coords)
+                if not self.hint is None:
+                    return
+
+    def __create_quad_hint(self, x, y, z, a, cells1, cur_coords):
+        good_cands = [(row, col, x) for row, col in cur_coords] + [(row, col, y) for row, col in cur_coords] + [(row, col, z) for row, col in cur_coords] + [(row, col, a) for row, col in cur_coords]
+        bad_x = [(row, col, x) for row, col in cells1 if (row, col) not in cur_coords and x in self.game.get_candidates(row, col)]
+        bad_y = [(row, col, y) for row, col in cells1 if (row, col) not in cur_coords and y in self.game.get_candidates(row, col)] 
+        bad_z = [(row, col, z) for row, col in cells1 if (row, col) not in cur_coords and z in self.game.get_candidates(row, col)] 
+        bad_a = [(row, col, a) for row, col in cells1 if (row, col) not in cur_coords and a in self.game.get_candidates(row, col)] 
+        bad_cands = bad_x + bad_y + bad_z + bad_a
+        if not bad_cands:
+            return
+        self.hint = Hint("Naked quad {} {} {} {}".format(x, y, z, a), cells1, None, good_cands, bad_cands, "Naked quad")
+    
+    def __get_quad_coords(self, quads):
+        quad_coords = {}
+        combinations = it.combinations(quads, 4)
+        for a, b, c, d in combinations:
+            union = a[0].union(b[0], c[0], d[0])
+            if len(union) == 4:
+                quad_coords[union] = [a[1], b[1], c[1], d[1]]
+
+        return quad_coords
 
     def __naked_pair(self):
         # boxes first
