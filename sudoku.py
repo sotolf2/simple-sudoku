@@ -116,6 +116,7 @@ class HintEngine(object):
             self.__naked_pair,
             self.__naked_triple,
             self.__hidden_pair,
+            self.__hidden_quad,
             self.__hidden_triple,
             self.__naked_quad,
             self.__pointing,
@@ -181,21 +182,18 @@ class HintEngine(object):
     def __hidden_triple(self):
         # boxes first
         for box_no in range(1,10):
-            print("box: ", box_no)
             coords = self.__get_box_coords(box_no) 
             self.__search_hidden_triple(coords)
             if not self.hint is None:
                 return
         # then rows
         for row in range(9):
-            print("row: ", row+1)
             coords = self.__get_row_coords(row)
             self.__search_hidden_triple(coords)
             if not self.hint is None:
                 return
         
         for col in range(9):
-            print("col: ", col+1)
             coords = self.__get_col_coords(col)
             self.__search_hidden_triple(coords)
 
@@ -215,9 +213,7 @@ class HintEngine(object):
             else:
                 place_cands[cand] = coord_set
 
-        print("all_cands: ", all_cands)
         combinations = [set(combo) for combo in it.combinations(all_cands, 3)]
-        print("combinations: ", combinations)
         for combo in combinations:
             cell_set = set()
             for cand in combo:
@@ -225,7 +221,6 @@ class HintEngine(object):
                 for cell in cand_cells:
                     cell_set.add(cell)
             if len(cell_set) == 3:
-                print("cell_set", cell_set)
                 containing_cells = list(cell_set)
                 cells1 = coords
                 good_cands = []
@@ -243,7 +238,64 @@ class HintEngine(object):
                 self.hint = Hint("Hidden triple {} {} {}".format(x,y,z), cells1, None, good_cands, bad_cands, "Hidden Triple" )
                 return
 
+    def __hidden_quad(self):
+        # boxes first
+        for box_no in range(1,10):
+            coords = self.__get_box_coords(box_no) 
+            self.__search_hidden_quad(coords)
+            if not self.hint is None:
+                return
+        # then rows
+        for row in range(9):
+            coords = self.__get_row_coords(row)
+            self.__search_hidden_quad(coords)
+            if not self.hint is None:
+                return
         
+        for col in range(9):
+            coords = self.__get_col_coords(col)
+            self.__search_hidden_quad(coords)
+
+    def __search_hidden_quad(self, coords):
+        coord_places = self.__get_candidate_positions(coords)
+        places = {cand: frozenset(cur_coords) for cand, cur_coords in coord_places.items() }
+        if len(places) < 4:
+            return
+        all_cands = set()
+        for cand_set in places.keys():
+            all_cands.add(cand_set)
+
+        place_cands = {}
+        for cand, coord_set in places.items():
+            if cand in place_cands:
+                place_cands[cand].add(coord_set)
+            else:
+                place_cands[cand] = coord_set
+
+        combinations = [set(combo) for combo in it.combinations(all_cands, 4)]
+        for combo in combinations:
+            cell_set = set()
+            for cand in combo:
+                cand_cells = [cell for cell in list(place_cands[cand])]
+                for cell in cand_cells:
+                    cell_set.add(cell)
+            if len(cell_set) == 4:
+                containing_cells = list(cell_set)
+                cells1 = coords
+                good_cands = []
+                bad_cands = []
+                for row, col in containing_cells:
+                    for cand in self.game.get_candidates(row, col):
+                        if cand in combo:
+                            good_cands.append((row, col, cand))
+                        else:
+                            bad_cands.append((row, col, cand))
+                if not bad_cands:
+                    continue
+            
+                w,x,y,z = tuple(combo)
+                self.hint = Hint("Hidden quad {} {} {} {}".format(w,x,y,z), cells1, None, good_cands, bad_cands, "Hidden Quad" )
+                return
 
     def __get_candidate_positions(self, coords):
         coord_cand = {(row, col): self.game.get_candidates(row, col) for row, col in coords}
