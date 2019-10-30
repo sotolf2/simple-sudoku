@@ -98,6 +98,18 @@ class SudokuBoard(object):
                 else:
                     new_board[i][j] = 0
         self.board = new_board
+    
+    def board_big_as_string(self):
+        puzzle_string = ""
+        for row in range(9):
+            for col in range(9):
+                given = self.board[row][col]
+                if given == 0:
+                    given = "."
+                else:
+                    given = str(given)
+                puzzle_string += given
+        return puzzle_string
 
 Hint = namedtuple('Hint', "technique cells1 cells2 good_cands bad_cands text")
 
@@ -114,15 +126,15 @@ class HintEngine(object):
             self.__naked_single,
             self.__hidden_single,
             self.__naked_pair,
+            self.__pointing,
+            self.__box_line_reduction,
             self.__naked_triple,
+            self.__naked_quad,
             self.__hidden_pair,
             self.__hidden_quad,
             self.__hidden_triple,
-            self.__naked_quad,
-            self.__pointing,
-            self.__box_line_reduction,
         ]
-    
+
     def get_hint(self):
         for tech in self.techs:
             tech()
@@ -921,6 +933,10 @@ class SudokuGame(object):
     def get_origin(self, row, col):
         return self.start_puzzle[row][col]
     
+    def get_puzzle_string(self):
+        self.board.set_board(self.start_puzzle)
+        return self.board.board_big_as_string()
+
     def update_candidates(self, row, col, undo=True):
         answer = self.puzzle[row][col]
         buddies = self.__find_buddies(row, col)
@@ -1091,6 +1107,7 @@ class SudokuUI(tk.Frame):
         filemenu = tk.Menu(menubar, tearoff=0)
         filemenu.add_command(label="Open", command=self.__from_file)
         filemenu.add_command(label="Import from clipboard", command=self.__from_clip)
+        filemenu.add_command(label="Export givens to clipboard", command=self.__export_givens_clip)
         menubar.add_cascade(label="File", menu=filemenu)
         puzzlemenu = tk.Menu(menubar, tearoff=0)
         puzzlemenu.add_command(label="Calculate candidates", command=self.__calculate_candidates)
@@ -1283,6 +1300,10 @@ class SudokuUI(tk.Frame):
         puzzle_string = self.clipboard_get()
         self.game.from_string(puzzle_string)
         self.__draw_puzzle()
+    
+    def __export_givens_clip(self):
+        self.clipboard_clear()
+        self.clipboard_append(self.game.get_puzzle_string())
 
     def __canvas_resize(self, event):
         base = min(event.width, event.height)
