@@ -110,6 +110,8 @@ class SudokuBoard(object):
                     given = str(given)
                 puzzle_string += given
         return puzzle_string
+    
+
 
 Hint = namedtuple('Hint', "technique cells1 cells2 good_cands bad_cands text")
 
@@ -937,6 +939,105 @@ class SudokuGame(object):
         self.board.set_board(self.start_puzzle)
         return self.board.board_big_as_string()
 
+    def get_forum_string(self):
+        forum_string = ""
+        # Build up candidate diagram
+        col_widths = [0 for col in range(9)]
+        candidates = [[0 for col in range(9)] for row in range(9)]
+        for row in range(9):
+            for col in range(9):
+                cur = self.get_cell(row, col)
+                if cur != 0:
+                    candidates[row][col] = [cur]
+                else:
+                    candidates[row][col] = self.get_candidates(row, col)
+                
+                width = len(candidates[row][col])
+                if width > col_widths[col]:
+                    col_widths[col] = width
+
+        # Prettyprint it
+        spacing = "-" * 4
+        header = "."
+        header += "-" * (col_widths[0] + col_widths[1] + col_widths[2])
+        header += spacing
+        header += "."
+        header += "-" * (col_widths[3] + col_widths[4] + col_widths[5])
+        header += spacing
+        header += "."
+        header += "-" * (col_widths[6] + col_widths[7] + col_widths[8])
+        header += spacing
+        header += "."
+        header += "\n"
+        
+        footer = "'"
+        footer += "-" * (col_widths[0] + col_widths[1] + col_widths[2])
+        footer += spacing
+        footer += "'"
+        footer += "-" * (col_widths[3] + col_widths[4] + col_widths[5])
+        footer += spacing
+        footer += "'"
+        footer += "-" * (col_widths[6] + col_widths[7] + col_widths[8])
+        footer += spacing
+        footer += "'"
+
+        spacer = ":"
+        spacer += "-" * (col_widths[0] + col_widths[1] + col_widths[2])
+        spacer += spacing
+        spacer += "+"
+        spacer += "-" * (col_widths[3] + col_widths[4] + col_widths[5])
+        spacer += spacing
+        spacer += "+"
+        spacer += "-" * (col_widths[6] + col_widths[7] + col_widths[8])
+        spacer += spacing
+        spacer += ":"
+        spacer += "\n"
+
+        forum_string += header
+        forum_string += self.__cand_row_to_string(candidates[0], col_widths)
+        forum_string += self.__cand_row_to_string(candidates[1], col_widths)
+        forum_string += self.__cand_row_to_string(candidates[2], col_widths)
+        forum_string += spacer
+        forum_string += self.__cand_row_to_string(candidates[3], col_widths)
+        forum_string += self.__cand_row_to_string(candidates[4], col_widths)
+        forum_string += self.__cand_row_to_string(candidates[5], col_widths)
+        forum_string += spacer
+        forum_string += self.__cand_row_to_string(candidates[6], col_widths)
+        forum_string += self.__cand_row_to_string(candidates[7], col_widths)
+        forum_string += self.__cand_row_to_string(candidates[8], col_widths)
+        forum_string += footer
+
+        return forum_string
+    
+    def __cand_row_to_string(self, cands, col_widths):
+        candstrings = ["".join(["".join(str(cand2)) for cand2 in cand]) for cand in cands]
+
+        for col in range(9):
+            candstrings[col] += " " * (col_widths[col] - len(candstrings[col]))
+
+        result = ""
+        result += "| "
+        result += candstrings[0]
+        result += " "
+        result += candstrings[1]
+        result += " "
+        result += candstrings[2]
+        result += " | "
+        result += candstrings[3]
+        result += " "
+        result += candstrings[4]
+        result += " "
+        result += candstrings[5]
+        result += " | "
+        result += candstrings[6]
+        result += " "
+        result += candstrings[7]
+        result += " "
+        result += candstrings[8]
+        result += " |\n"
+
+        return result
+
     def update_candidates(self, row, col, undo=True):
         answer = self.puzzle[row][col]
         buddies = self.__find_buddies(row, col)
@@ -1108,6 +1209,7 @@ class SudokuUI(tk.Frame):
         filemenu.add_command(label="Open", command=self.__from_file)
         filemenu.add_command(label="Import from clipboard", command=self.__from_clip)
         filemenu.add_command(label="Export givens to clipboard", command=self.__export_givens_clip)
+        filemenu.add_command(label="Export candidates to clipboard", command=self.__export_candidates_clip)
         menubar.add_cascade(label="File", menu=filemenu)
         puzzlemenu = tk.Menu(menubar, tearoff=0)
         puzzlemenu.add_command(label="Calculate candidates", command=self.__calculate_candidates)
@@ -1304,6 +1406,10 @@ class SudokuUI(tk.Frame):
     def __export_givens_clip(self):
         self.clipboard_clear()
         self.clipboard_append(self.game.get_puzzle_string())
+
+    def __export_candidates_clip(self):
+        self.clipboard_clear()
+        self.clipboard_append(self.game.get_forum_string())
 
     def __canvas_resize(self, event):
         base = min(event.width, event.height)
