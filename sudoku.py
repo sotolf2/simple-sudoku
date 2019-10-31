@@ -868,13 +868,49 @@ class SudokuGame(object):
 
     def get_state(self) -> str:
         state = ""
+        state += "[Puzzle]\n"
+        state += self.__str_format_2d(self.start_puzzle)
+        
+        state += "[State]\n"
+        state += self.__str_format_2d(self.puzzle)
+        
+        state += "[PencilMarks]\n"
+        for row in self.candidates:
+            rowstr = ",".join(["".join(sorted([str(cand) for cand in list(cands)])) for cands in row])
+            rowstr += "\n"
+            state += rowstr
+
+        state += "[CellColours]\n"
+        state += self.__str_format_2d(self.colours)
+
+        state += "[PencilMarkColours]\n"
+        for row in self.candidate_colours:
+            rowstr = ",".join([ "".join([str(cand) for cand in cands]) for cands in row ])
+            rowstr += "\n"
+            state += rowstr
+
         return state
+    
+    def __str_format_2d(self, board: List[List[int]]) -> str:
+        result = ""
+        for row in board:
+            rowstr = ""
+            for num in row:
+                if num == 0:
+                    rowstr += "."
+                else:
+                    rowstr += str(num)
+            rowstr += "\n"
+            result += rowstr
+
+        return result
 
     def get_cell(self, row: int, col: int) -> int:
         return self.puzzle[row][col]
     
     def set_cell(self, row: int, col: int, val: int, undo=True):
         self.puzzle[row][col] = val
+        self.candidates[row][col] = set()
         self.update_candidates(row, col, undo=False)
         if undo:
             self.save_undo_state()
@@ -1402,7 +1438,7 @@ class SudokuUI(tk.Frame):
         self.__draw_puzzle()
 
     def __goto_puzzle(self):
-        in_num = simpledialog.askinteger("Go to puzzle", "Go to which puzzle number")
+        in_num = tkinter.simpledialog.askinteger("Go to puzzle", "Go to which puzzle number")
         if in_num is not None:
             self.puzzle_num = in_num - 1
             self.game.load_puzzle(self.file_name, self.puzzle_num)
