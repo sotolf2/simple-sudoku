@@ -2,10 +2,12 @@ import random
 from collections import deque, namedtuple, Counter
 from copy import deepcopy
 import tkinter as tk
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox, simpledialog, filedialog
 import itertools as it
 from textwrap import wrap
 from enum import Enum
+import pickle
+from typing import List, Dict, Tuple, Callable
 
 
 MARGIN =  20 # Pixels around the board
@@ -26,24 +28,24 @@ class SudokuBoard(object):
     """
     Sudoku Board Representation
     """
-    def __init__(self, puzzle_string):
+    def __init__(self, puzzle_string: str):
         self.__create_board(puzzle_string)
     
-    def update(self, puzzle_string):
+    def update(self, puzzle_string: str):
         self.__create_board(puzzle_string)
     
-    def get(self):
+    def get(self) -> List[List[int]]:
         return self.board[:]
 
-    def set_board(self, board):
+    def set_board(self, board: List[List[int]]):
         self.board = board
     
-    def __create_board(self, puzzle_string):
+    def __create_board(self, puzzle_string: str):
         rows = wrap(puzzle_string, 9)
         rows = [row.replace('.', '0') for row in rows]
         self.board = [ [int(ch) for ch in row] for row in rows ]
 
-    def generate(self, difficulty):
+    def generate(self, difficulty: str):
         file_name = difficulty + ".seed"
         with open(file_name) as file:
             puzzles = [line.strip() for line in file]
@@ -99,7 +101,7 @@ class SudokuBoard(object):
                     new_board[i][j] = 0
         self.board = new_board
     
-    def board_big_as_string(self):
+    def board_big_as_string(self) -> str:
         puzzle_string = ""
         for row in range(9):
             for col in range(9):
@@ -137,7 +139,7 @@ class HintEngine(object):
             self.__hidden_triple,
         ]
 
-    def get_hint(self):
+    def get_hint(self) -> Hint:
         for tech in self.techs:
             tech()
             if not self.hint is None:
@@ -163,7 +165,7 @@ class HintEngine(object):
             coords = self.__get_col_coords(col)
             self.__search_hidden_pair(coords)
 
-    def __search_hidden_pair(self, coords):
+    def __search_hidden_pair(self, coords: List[Tuple[int, int]]):
         coord_places = self.__get_candidate_positions(coords)
         places = {cand: frozenset(cur_coords) for cand, cur_coords in coord_places.items() if len(cur_coords) == 2 }
         if len(places) < 2:
@@ -211,7 +213,7 @@ class HintEngine(object):
             coords = self.__get_col_coords(col)
             self.__search_hidden_triple(coords)
 
-    def __search_hidden_triple(self, coords):
+    def __search_hidden_triple(self, coords: List[Tuple[int, int]]):
         coord_places = self.__get_candidate_positions(coords)
         places = {cand: frozenset(cur_coords) for cand, cur_coords in coord_places.items() }
         if len(places) < 3:
@@ -270,7 +272,7 @@ class HintEngine(object):
             coords = self.__get_col_coords(col)
             self.__search_hidden_quad(coords)
 
-    def __search_hidden_quad(self, coords):
+    def __search_hidden_quad(self, coords: List[Tuple[int, int]]):
         coord_places = self.__get_candidate_positions(coords)
         places = {cand: frozenset(cur_coords) for cand, cur_coords in coord_places.items() }
         if len(places) < 4:
@@ -311,7 +313,7 @@ class HintEngine(object):
                 self.hint = Hint("Hidden quad {} {} {} {}".format(w,x,y,z), cells1, None, good_cands, bad_cands, "Hidden Quad" )
                 return
 
-    def __get_candidate_positions(self, coords):
+    def __get_candidate_positions(self, coords: List[Tuple[int, int]]) -> Dict[int, List[Tuple[int, int]]]:
         coord_cand = {(row, col): self.game.get_candidates(row, col) for row, col in coords}
 
         cand_coord = {}
@@ -393,7 +395,7 @@ class HintEngine(object):
                 if not self.hint is None:
                     return
 
-    def __create_triple_hint(self, x, y, z, cells1, cur_coords):
+    def __create_triple_hint(self, x: int, y: int, z: int, cells1: List[Tuple[int, int]], cur_coords: List[Tuple[int, int]]):
         good_cands = [(row, col, x) for row, col in cur_coords] + [(row, col, y) for row, col in cur_coords] + [(row, col, z) for row, col in cur_coords]
         bad_x = [(row, col, x) for row, col in cells1 if (row, col) not in cur_coords and x in self.game.get_candidates(row, col)]
         bad_y = [(row, col, y) for row, col in cells1 if (row, col) not in cur_coords and y in self.game.get_candidates(row, col)] 
@@ -403,7 +405,7 @@ class HintEngine(object):
             return
         self.hint = Hint("Naked triple {} {} {}".format(x, y, z), cells1, None, good_cands, bad_cands, "Naked triple")
     
-    def __get_triplet_coords(self, triplets):
+    def __get_triplet_coords(self, triplets: List[Tuple[frozenset, Tuple[int, int]]]) -> Dict[frozenset, List[Tuple[int, int]]]:
         triplet_coords = {}
         combinations = it.combinations(triplets, 3)
         for a, b, c in combinations:
@@ -480,7 +482,7 @@ class HintEngine(object):
                 if not self.hint is None:
                     return
 
-    def __create_quad_hint(self, x, y, z, a, cells1, cur_coords):
+    def __create_quad_hint(self, x: int, y: int, z: int, a: int, cells1: List[Tuple[int, int]], cur_coords: List[Tuple[int, int]]):
         good_cands = [(row, col, x) for row, col in cur_coords] + [(row, col, y) for row, col in cur_coords] + [(row, col, z) for row, col in cur_coords] + [(row, col, a) for row, col in cur_coords]
         bad_x = [(row, col, x) for row, col in cells1 if (row, col) not in cur_coords and x in self.game.get_candidates(row, col)]
         bad_y = [(row, col, y) for row, col in cells1 if (row, col) not in cur_coords and y in self.game.get_candidates(row, col)] 
@@ -491,7 +493,7 @@ class HintEngine(object):
             return
         self.hint = Hint("Naked quad {} {} {} {}".format(x, y, z, a), cells1, None, good_cands, bad_cands, "Naked quad")
     
-    def __get_quad_coords(self, quads):
+    def __get_quad_coords(self, quads: List[Tuple[frozenset, Tuple[int, int]]]) -> Dict[frozenset, List[Tuple[int, int]]]:
         quad_coords = {}
         combinations = it.combinations(quads, 4)
         for a, b, c, d in combinations:
@@ -564,7 +566,7 @@ class HintEngine(object):
                     if not self.hint is None:
                         return
     
-    def __create_pair_hint(self, x, y, cells1, cur_coords):
+    def __create_pair_hint(self, x: int, y: int, cells1: List[Tuple[int, int]], cur_coords: List[Tuple[int, int]]):
         good_cands = [(row, col, x) for row, col in cur_coords] + [(row, col, y) for row, col in cur_coords]
         bad_x = [(row, col, x) for row, col in cells1 if (row, col) not in cur_coords and x in self.game.get_candidates(row, col)]
         bad_y = [(row, col, y) for row, col in cells1 if (row, col) not in cur_coords and y in self.game.get_candidates(row, col)] 
@@ -573,7 +575,7 @@ class HintEngine(object):
             return
         self.hint = Hint("Naked pair {} {}".format(x, y), cells1, None, good_cands, bad_cands, "Naked pair")
 
-    def __get_pair_coords(self, pairs):
+    def __get_pair_coords(self, pairs: List[Tuple[frozenset, Tuple[int, int]]]) -> Dict[frozenset, List[Tuple[int, int]]]:
         pair_coords = {}
         for pair, coord in pairs:
             if pair in pair_coords:
@@ -596,7 +598,7 @@ class HintEngine(object):
             coords = self.__get_col_coords(col)
             self.__search_bl_reduction(coords)
 
-    def __search_bl_reduction(self,coords):
+    def __search_bl_reduction(self, coords: List[Tuple[int, int]]):
         candidate_coords = self.__get_candidate_coords(coords)
 
         for candidate in range(1,10):
@@ -624,7 +626,7 @@ class HintEngine(object):
 
 
             
-    def __get_box(self, row, col):
+    def __get_box(self, row: int, col: int) -> int:
         box_row = row // 3
         box_col = col // 3
 
@@ -678,7 +680,7 @@ class HintEngine(object):
                         self.hint = Hint("Pointing Pair/Triple (column)", cells1, None, good_cands, bad_cands, "Pointing Pair/Triple reduces row")
                         return
 
-    def __get_candidate_coords(self, coords):
+    def __get_candidate_coords(self, coords: List[Tuple[int, int]]) -> Dict[int, List[Tuple[int, int]]]:
         candidate_coords = {}
         # Build list of locations where each candidate can be
         for row, col in coords:
@@ -743,7 +745,7 @@ class HintEngine(object):
                 self.hint = Hint("Hidden single (column)", coords, None, ((row, col, cand),), None, "In the column this candidate can only be here" )
                 return
 
-    def __hs_search(self, coords):
+    def __hs_search(self, coords: List[Tuple[int, int]]) -> Tuple[bool, Tuple[int, int]]:
         cnt = Counter()
         search_coords = [ (row, col) for row, col in coords if self.game.get_cell(row,col) == 0]
         for row, col in search_coords:
@@ -756,7 +758,7 @@ class HintEngine(object):
                         return (True, ((row,col), i))
         return (False, (None, None))
 
-    def __get_box_coords(self, box_no):
+    def __get_box_coords(self, box_no: int) -> List[Tuple[int, int]]:
         coords = [
             None,
             # Box 1
@@ -780,19 +782,19 @@ class HintEngine(object):
         ]
         return [(row, col) for row, col in coords[box_no] if self.game.get_cell(row, col) == 0]
 
-    def __get_row_coords(self, row):
+    def __get_row_coords(self, row: int) -> List[Tuple[int, int]]:
         coords = []
         for i in range(9):
             coords.append((row,i))
         return [(row, col) for row, col in coords if self.game.get_cell(row, col) == 0]
     
-    def __get_col_coords(self, col):
+    def __get_col_coords(self, col: int) -> List[Tuple[int, int]]:
         coords = []
         for i in range(9):
             coords.append((i, col))
         return [(row, col) for row, col in coords if self.game.get_cell(row, col) == 0]
 
-    def get_naked(self):
+    def get_naked(self) -> Hint:
         self.__naked_single()
         return self.hint
 
@@ -830,7 +832,7 @@ class SudokuGame(object):
     def save_undo_state(self):
         self.undostack.append((deepcopy(self.puzzle), deepcopy(self.start_puzzle), deepcopy(self.candidates),deepcopy(self.colours), deepcopy(self.candidate_colours)))
 
-    def hint(self):
+    def hint(self) -> str:
         self.reset_colours()
         hint = HintEngine(self).get_hint()
 
@@ -862,10 +864,14 @@ class SudokuGame(object):
     def undo(self):
         self.puzzle, self.start_puzzle, self.candidates, self.colours, self.candidate_colours = self.undostack.pop()
 
-    def get_cell(self, row, col):
+    def get_state(self) -> str:
+        state = ""
+        return state
+
+    def get_cell(self, row: int, col: int) -> int:
         return self.puzzle[row][col]
     
-    def set_cell(self, row, col, val, undo=True):
+    def set_cell(self, row: int, col: int, val: int, undo=True):
         self.puzzle[row][col] = val
         self.update_candidates(row, col, undo=False)
         if undo:
@@ -877,7 +883,7 @@ class SudokuGame(object):
                 self.calculate_candidates(row, col, undo=False)
         self.save_undo_state()
 
-    def calculate_candidates(self, row, col, undo=True):
+    def calculate_candidates(self, row: int, col: int, undo=True):
         if self.puzzle[row][col] == 0:
             candidates = list(set(range(10)).difference(self.__set_buddies(row, col)))
             for candidate in candidates:
@@ -887,30 +893,30 @@ class SudokuGame(object):
             self.save_undo_state()
 
 
-    def get_candidates(self, row, col):
+    def get_candidates(self, row: int, col: int) -> List[int]:
         return list(self.candidates[row][col])
     
-    def get_candidate_set(self,row, col):
+    def get_candidate_set(self, row: int, col: int) -> List[int]:
         return self.candidates
     
-    def get_cell_colour(self, row, col):
+    def get_cell_colour(self, row: int, col: int) -> str:
         return COLOURS[self.colours[row][col]]
     
-    def get_candidate_colour(self, row, col, candidate):
+    def get_candidate_colour(self, row: int, col: int, candidate: int) -> str:
         return COLOURS[self.candidate_colours[row][col][candidate]]
     
-    def set_candidate_colour(self, row, col, candidate, colour_number, undo=True):
+    def set_candidate_colour(self, row: int, col: int, candidate: int, colour_number: int, undo=True):
         self.candidate_colours[row][col][candidate] = colour_number
         if undo:
             self.save_undo_state()
     
-    def set_cell_colour(self, row, col, colour_number, undo=True):
+    def set_cell_colour(self, row: int, col: int, colour_number: int, undo=True):
         self.colours[row][col] = colour_number
         if undo:
             self.save_undo_state()
 
 
-    def toggle_candidate(self, row, col, val, undo=True):
+    def toggle_candidate(self, row: int, col: int, val: int, undo=True):
         if val not in self.candidates[row][col]:
             self.candidates[row][col].add(val)
         else:
@@ -922,24 +928,51 @@ class SudokuGame(object):
         self.colours = [[0 for i in range(9)] for j in range(9)]
         self.candidate_colours = [[[0 for x in range(10)] for y in range(9)] for z in range(9)]
     
-    def remove_candidate(self, row, col, val, undo=True):
+    def remove_candidate(self, row: int, col: int, val: int, undo=True):
         self.candidates[row][col].discard(val)
         if undo:
             self.save_undo_state()
     
-    def add_candidate(self, row, col, val, undo=True):
+    def add_candidate(self, row: int, col: int, val: int, undo=True):
         self.candidates[row][col].add(val)
         if undo:    
             self.save_undo_state()
 
-    def get_origin(self, row, col):
+    def get_origin(self, row: int, col: int) -> int:
         return self.start_puzzle[row][col]
     
-    def get_puzzle_string(self):
+    def get_puzzle_string(self) -> str:
         self.board.set_board(self.start_puzzle)
         return self.board.board_big_as_string()
 
-    def get_forum_string(self):
+    def set_forum_string(self, forum_string: str):
+        new_origin = [[0 for col in range(9)] for row in range(9)]
+        new_candidates = [[set() for x in range(9)] for y in range(9)]
+        tmp_cands = []
+        for line in forum_string.splitlines():
+            line.strip()
+            if not line or not line[0] == "|":
+                continue
+            line = line.replace("|", "")
+            row = line.split()
+            for col in range(9):
+                row[col] = [int(char) for char in row[col]]
+            tmp_cands.append(row)
+            
+            
+        for row in range(9):
+            for col in range(9):
+                cur_cands = tmp_cands[row][col]
+                if len(cur_cands) == 1:
+                    new_origin[row][col] = cur_cands[0]
+                else:
+                    new_candidates[row][col].update(set(cur_cands))
+        
+        self.start_puzzle = new_origin
+        self.puzzle = new_origin
+        self.candidates = new_candidates
+
+    def get_forum_string(self) -> str:
         forum_string = ""
         # Build up candidate diagram
         col_widths = [0 for col in range(9)]
@@ -1009,7 +1042,7 @@ class SudokuGame(object):
 
         return forum_string
     
-    def __cand_row_to_string(self, cands, col_widths):
+    def __cand_row_to_string(self, cands: List[List[int]], col_widths: List[int]) -> str:
         candstrings = ["".join(["".join(str(cand2)) for cand2 in cand]) for cand in cands]
 
         for col in range(9):
@@ -1038,7 +1071,7 @@ class SudokuGame(object):
 
         return result
 
-    def update_candidates(self, row, col, undo=True):
+    def update_candidates(self, row: int, col: int, undo=True):
         answer = self.puzzle[row][col]
         buddies = self.__find_buddies(row, col)
         for r, c in buddies:
@@ -1046,7 +1079,7 @@ class SudokuGame(object):
         if undo:
             self.save_undo_state()
 
-    def __find_buddies(self, row, col):
+    def __find_buddies(self, row: int, col: int) -> List[Tuple[int, int]]:
         buddies = [] 
         # Row buddies
         buddies.extend([(row, c) for c in range(9)])
@@ -1077,13 +1110,13 @@ class SudokuGame(object):
                 self.start_puzzle[i][j] = 0
         self.start()
                 
-    def load_puzzle(self, file_name, line_number):
+    def load_puzzle(self, file_name: str, line_number: int):
         with open(file_name) as file:
             puzzles = [line.strip() for line in file]
             self.from_string(puzzles[line_number])
         self.save_undo_state()
 
-    def generate(self, difficulty):
+    def generate(self, difficulty: str):
         self.board.generate(difficulty)
         self.start_puzzle = self.board.get()
         self.start()
@@ -1108,19 +1141,19 @@ class SudokuGame(object):
         self.start_puzzle = self.board.get()
         self.start()
 
-    def load_random_puzzle(self, file_name):
+    def load_random_puzzle(self, file_name: str):
         with open(file_name) as file:
             puzzles = [line.strip() for line in file]
             self.from_string(random.choice(puzzles))
         self.save_undo_state()
 
-    def from_string(self, puzzle_string):
+    def from_string(self, puzzle_string: str):
         self.board.update(puzzle_string)
         self.start_puzzle = self.board.get()
         self.start()
         self.save_undo_state()
     
-    def check_win(self):
+    def check_win(self) -> bool:
         for row in range(9):
             if not self.__check_row(row):
                 return False
@@ -1134,24 +1167,24 @@ class SudokuGame(object):
         self.game_over = True
         return True
 
-    def __check_group(self, block):
+    def __check_group(self, block: List[int]) -> bool:
         return set(block) == set(range(1,10))
 
-    def __check_row(self, row):
+    def __check_row(self, row: List[int]) -> bool:
         return self.__check_group(self.puzzle[row])
 
-    def __set_row(self, row):
+    def __set_row(self, row: int) -> set:
         return set(self.puzzle[row])
 
-    def __check_column(self, col):
+    def __check_column(self, col: int) -> bool:
         return self.__check_group(
             [self.puzzle[row][col] for row in range(9)]
         )
     
-    def __set_column(self, col):
+    def __set_column(self, col: int) -> set:
         return set([self.puzzle[row][col] for row in range(9)])
 
-    def __check_square(self, row, col):
+    def __check_square(self, row: int, col: int) -> bool:
         return self.__check_group(
             [
                 self.puzzle[r][c]
@@ -1160,7 +1193,7 @@ class SudokuGame(object):
             ]
         )
     
-    def __set_square(self, box_row, box_col):
+    def __set_square(self, box_row: int, box_col: int) -> set:
         return set(
             [
                 self.puzzle[r][c]
@@ -1169,7 +1202,7 @@ class SudokuGame(object):
             ]
         )
     
-    def __set_buddies(self, row, col):
+    def __set_buddies(self, row: int, col: int) -> set:
         return self.__set_row(row).union(self.__set_column(col), self.__set_square(row // 3, col // 3))
 
     
@@ -1177,7 +1210,7 @@ class SudokuUI(tk.Frame):
     """
     The Tkinter UI, responsible for drawing the board and accepting user input.
     """
-    def __init__(self, parent, game):
+    def __init__(self, parent: tk.Frame, game: SudokuGame):
         self.game = game
         self.parent = parent
         tk.Frame.__init__(self, parent)
@@ -1206,10 +1239,12 @@ class SudokuUI(tk.Frame):
         # Menubar
         menubar = tk.Menu(self.parent)
         filemenu = tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(label="Open", command=self.__from_file)
+        filemenu.add_command(label="Open...", command=self.__from_file)
         filemenu.add_command(label="Import from clipboard", command=self.__from_clip)
+        filemenu.add_command(label="Import candidates from clipboard", command=self.__from_candidates_clip)
         filemenu.add_command(label="Export givens to clipboard", command=self.__export_givens_clip)
         filemenu.add_command(label="Export candidates to clipboard", command=self.__export_candidates_clip)
+        filemenu.add_command(label="Save state as...", command=self.__save_state_as)
         menubar.add_cascade(label="File", menu=filemenu)
         puzzlemenu = tk.Menu(menubar, tearoff=0)
         puzzlemenu.add_command(label="Calculate candidates", command=self.__calculate_candidates)
@@ -1279,7 +1314,7 @@ class SudokuUI(tk.Frame):
         self.canvas.bind("<Key>", self.__key_pressed)
         self.canvas.bind("<Configure>", self.__canvas_resize)
     
-    def __erase_colouring(self, event):
+    def __erase_colouring(self, event: tk.Event):
         self.game.reset_colours()
         self.technique = ""
         self.__draw_puzzle()
@@ -1299,9 +1334,17 @@ class SudokuUI(tk.Frame):
 
         self.__draw_puzzle()
     
-    def __undo(self, event):
+    def __undo(self, event: tk.Event):
         self.game.undo()
         self.__draw_puzzle()
+
+    def __save_state_as(self):
+        file = filedialog.asksaveasfile(mode='w', defaultextension=".sdk")
+        if file is None:
+            return
+        content = self.game.get_state()
+        file.write(content)
+        file.close()
 
     def __generate_easy(self):
         self.game.generate("Easy")
@@ -1350,7 +1393,7 @@ class SudokuUI(tk.Frame):
         self.__draw_puzzle()
 
     def __from_file(self):
-        self.file_name = tk.filedialog.askopenfilename(title="Open puzzle file")
+        self.file_name = filedialog.askopenfilename(title="Open puzzle file")
         self.puzzle_num = 0
         self.game.load_puzzle(self.file_name, self.puzzle_num)
         self.__draw_puzzle()
@@ -1381,7 +1424,7 @@ class SudokuUI(tk.Frame):
         self.game.calculate_all_candidates()
         self.__draw_puzzle()
 
-    def __toggle_highlight(self, event):
+    def __toggle_highlight(self, event: tk.Event):
         number = int(event.keysym[1])
         if self.highlight == number:
             self.highlight = 0
@@ -1411,7 +1454,12 @@ class SudokuUI(tk.Frame):
         self.clipboard_clear()
         self.clipboard_append(self.game.get_forum_string())
 
-    def __canvas_resize(self, event):
+    def __from_candidates_clip(self):
+        forum_string = self.clipboard_get()
+        self.game.set_forum_string(forum_string)
+        self.__draw_puzzle()
+
+    def __canvas_resize(self, event: tk.Event):
         base = min(event.width, event.height)
 
         self.side = (base - 2 * self.margin) // 9 
@@ -1513,7 +1561,7 @@ class SudokuUI(tk.Frame):
         if self.autosolve_naked_singles.get():
             self.__autofill_naked_singles()
 
-    def __get_candidate_pos(self, row, col, candidate):
+    def __get_candidate_pos(self, row: int, col: int, candidate: int) -> Tuple[int, int]:
         diff = self.candidatediff
         cx = self.margin + col * self.side + self.side / 2
         cy = self.margin + row * self.side + self.side / 2
@@ -1548,11 +1596,11 @@ class SudokuUI(tk.Frame):
         return x, y
 
 
-    def __draw_candidate(self, row, col, candidate):
+    def __draw_candidate(self, row: int, col: int, candidate: int):
         x,y = self.__get_candidate_pos(row, col, candidate)
         self.canvas.create_text(x,y, text=candidate, tags="candidates", fill="gray", font=("Arial", self.candidatesize))
 
-    def __draw_candidate_colour(self, row, col, candidate):
+    def __draw_candidate_colour(self, row: int, col: int, candidate: int):
         diff = self.candidatediff / 2 - 1
         colour = self.game.get_candidate_colour(row, col, candidate)
         if colour is None:
@@ -1569,7 +1617,7 @@ class SudokuUI(tk.Frame):
         self.canvas.delete("victory")
         self.__draw_puzzle()
 
-    def __cell_clicked(self, event):
+    def __cell_clicked(self, event: tk.Event):
         if self.game.game_over:
             return
 
@@ -1590,7 +1638,7 @@ class SudokuUI(tk.Frame):
 
         self.__draw_cursor()
 
-    def __cursor_left(self, event):
+    def __cursor_left(self, event: tk.Event):
         self.canvas.delete("cursor")
         if self.__deselected():
             self.row = 0
@@ -1602,7 +1650,7 @@ class SudokuUI(tk.Frame):
                 self.col -= 1
         self.__draw_cursor()
     
-    def __cursor_right(self, event):
+    def __cursor_right(self, event: tk.Event):
         self.canvas.delete("cursor")
         if self.__deselected():
             self.row = 0
@@ -1614,7 +1662,7 @@ class SudokuUI(tk.Frame):
                 self.col += 1
         self.__draw_cursor()
 
-    def __cursor_up(self, event):
+    def __cursor_up(self, event: tk.Event):
         self.canvas.delete("cursor")
         if self.__deselected():
             self.row = 8
@@ -1626,7 +1674,7 @@ class SudokuUI(tk.Frame):
                 self.row -= 1
         self.__draw_cursor()
 
-    def __cursor_down(self, event):
+    def __cursor_down(self, event: tk.Event):
         self.canvas.delete("cursor")
         if self.__deselected():
             self.row = 0
@@ -1638,7 +1686,7 @@ class SudokuUI(tk.Frame):
                 self.row += 1
         self.__draw_cursor()
 
-    def __deselected(self):
+    def __deselected(self) -> bool:
         if self.row == -1 and self.col == -1:
             return True
         else:
@@ -1664,7 +1712,7 @@ class SudokuUI(tk.Frame):
                 color = "pink"
             self.canvas.create_rectangle(x0, y0, x1, y1, outline=color, tags="cursor", width=3)
 
-    def __key_pressed(self, event):
+    def __key_pressed(self, event: tk.Event):
         if self.game.game_over:
             return
 
@@ -1702,7 +1750,7 @@ class SudokuUI(tk.Frame):
         self.__draw_cursor()
         self.__draw_puzzle()
 
-    def __toggle_mode_colouring(self, event):
+    def __toggle_mode_colouring(self, event: tk.Event):
         if self.mode is Mode.colour:
             self.mode = Mode.solution
         else:
@@ -1710,7 +1758,7 @@ class SudokuUI(tk.Frame):
         self.__draw_cursor()
         self.__draw_puzzle()
     
-    def __toggle_mode_colour_candidate(self, event):
+    def __toggle_mode_colour_candidate(self, event: tk.Event):
         if self.mode is Mode.colour_candidate:
             self.mode = Mode.solution
         else:
