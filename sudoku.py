@@ -866,6 +866,78 @@ class SudokuGame(object):
     def undo(self):
         self.puzzle, self.start_puzzle, self.candidates, self.colours, self.candidate_colours = self.undostack.pop()
 
+    def import_state(self, content: str):
+        lines = content.splitlines()
+        puzzle_strs: List[str] = []
+        state_strs: List[str] = []
+        pencil_mark_strs: List[str] = []
+        cell_colour_strs: List[str] = []
+        pencil_mark_col_strs: List[str] = []
+
+        i = 0
+        while i < len(lines):
+            if lines[i].strip() == "[Puzzle]":
+                i += 1
+                for j in range(9):
+                    puzzle_strs.append(lines[i])
+                    i += 1
+            elif lines[i].strip() == "[State]":
+                i += 1
+                for j in range(9):
+                    state_strs.append(lines[i])
+                    i += 1
+            elif lines[i].strip() == "[PencilMarks]":
+                i += 1
+                for j in range(9):
+                    pencil_mark_strs.append(lines[i])
+                    i += 1
+            elif lines[i].strip() == "[CellColours]":
+                i += 1
+                for j in range(9):
+                    cell_colour_strs.append(lines[i])
+                    i += 1
+            elif lines[i].strip() == "[PencilMarkColours]":
+                i += 1
+                for j in range(9):
+                    pencil_mark_col_strs.append(lines[i])
+                    i += 1
+            else:
+                i += 1
+        
+        if puzzle_strs:
+            self.start_puzzle = self.__import_2d(puzzle_strs)
+        if state_strs:
+            self.puzzle = self.__import_2d(state_strs)
+        if pencil_mark_strs:
+            self.candidates = self.__import_pms(pencil_mark_strs)
+        if cell_colour_strs:
+            self.colours = self.__import_2d(cell_colour_strs)
+        if pencil_mark_col_strs:
+            self.candidate_colours = self.__import_pmcs(pencil_mark_col_strs)
+
+    def __import_pmcs(self, in_strs: List[str]) -> List[List[List[int]]]:
+        result = []
+        for line in in_strs:
+            candstrs = line.split(',')
+            result.append([[int(ch) for ch in cands] for cands in candstrs])
+        return result
+    
+    def __import_pms(self, in_strs: List[str]) -> List[List[set]]:
+        result = []
+        for line in in_strs:
+            candstrs = line.split(',')
+            result.append([set([int(cand) for cand in cands]) for cands in candstrs])
+        
+        return result
+        
+    def __import_2d(self, in_strs: List[str]) -> List[List[int]]:
+        result = []
+        for line in in_strs:
+            line = line.replace(".", "0")
+            result.append([int(ch) for ch in line])
+        
+        return result
+
     def get_state(self) -> str:
         state = ""
         state += "[Puzzle]\n"
@@ -1278,11 +1350,12 @@ class SudokuUI(tk.Frame):
         # Menubar
         menubar = tk.Menu(self.parent)
         filemenu = tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(label="Open...", command=self.__from_file)
+        filemenu.add_command(label="Open Collection...", command=self.__from_file)
         filemenu.add_command(label="Import from clipboard", command=self.__from_clip)
         filemenu.add_command(label="Import candidates from clipboard", command=self.__from_candidates_clip)
         filemenu.add_command(label="Export givens to clipboard", command=self.__export_givens_clip)
         filemenu.add_command(label="Export candidates to clipboard", command=self.__export_candidates_clip)
+        filemenu.add_command(label="Import state from file...", command=self.__import_state_from_file)
         filemenu.add_command(label="Save state as...", command=self.__save_state_as)
         menubar.add_cascade(label="File", menu=filemenu)
         puzzlemenu = tk.Menu(menubar, tearoff=0)
@@ -1432,10 +1505,18 @@ class SudokuUI(tk.Frame):
         self.__draw_puzzle()
 
     def __from_file(self):
-        self.file_name = filedialog.askopenfilename(title="Open puzzle file")
+        self.file_name = filedialog.askopenfilename(title="Open puzzle collection")
         self.puzzle_num = 0
         self.game.load_puzzle(self.file_name, self.puzzle_num)
         self.__draw_puzzle()
+
+    def __import_state_from_file(self):
+        file = filedialog.askopenfile(mode='r', filetypes=[('Sudoku puzzle state', '*.sdk')])
+        if file is not None:
+            content = file.read()
+            self.game.import_state(content)
+            file.close()
+            self.__draw_puzzle()
 
     def __goto_puzzle(self):
         in_num = tkinter.simpledialog.askinteger("Go to puzzle", "Go to which puzzle number")
