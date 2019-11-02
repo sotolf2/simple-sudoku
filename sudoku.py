@@ -17,7 +17,7 @@ WIDTH = HEIGHT = MARGIN * 2 + SIDE * 9 # Width and height of the whole board
 # Highlight colours
 HLANSWER = "light goldenrod"
 HLCAND = "light blue"
-COLOURS = [None, "pale green", "sienna1", "khaki1", "cornflower blue", "mediumpurple1", "peachpuff2", "tomato", "sandy brown", "hot pink"]
+COLOURS = [None, "pale green", "sienna1", "khaki1", "sky blue", "mediumpurple1", "peachpuff2", "tomato", "sandy brown", "hot pink"]
 
 class Mode(Enum):
     solution = 1
@@ -139,6 +139,7 @@ class HintEngine(object):
             self.__hidden_pair,
             self.__hidden_quad,
             self.__hidden_triple,
+            self.__xwings,
         ]
 
     def get_hint(self) -> Hint:
@@ -148,6 +149,122 @@ class HintEngine(object):
                 break
         
         return self.hint
+
+    def __xwings(self):
+        for cand in range(1,10):
+            self.__xw_rows(cand)
+            if not self.hint is None:
+                return
+        
+        for cand in range(1,10):
+            self.__xw_cols(cand)
+            if not self.hint is None:
+                return
+
+    def __xw_rows(self, cand: int):
+        coords = self.__get_coords(cand)
+        if len(coords) < 5:
+            return
+
+        strong_links = []
+        for row in range(9):
+            cur_row = [ (r, c) for r, c in coords if r == row ]
+            if len(cur_row) == 2:
+                strong_links.append(cur_row)
+
+        strong_combos = it.combinations(strong_links, 2)
+        for combo in strong_combos:
+            cols = set()
+            for lst in combo:
+                for row, col in lst:
+                    cols.add(col)
+            
+            if len(cols) == 2:
+                rows = set()
+                for lst in combo:
+                    for row, col in lst:
+                        rows.add(row)
+
+                cells1 = []
+                for row in list(rows):
+                    cells1.extend(self.__get_row_coords(row))
+                cells2 = []
+                for col in list(cols):
+                    cells2.extend([coord for coord in self.__get_col_coords(col) if coord not in cells1])
+                
+                good_cands = []
+                for lst in combo:
+                    for row, col in lst:
+                        good_cands.append((row, col, cand))
+                
+                bad_cands = []
+                for row, col in cells2:
+                    if cand in self.game.get_candidates(row, col):
+                        bad_cands.append((row, col, cand))
+                
+                if not bad_cands:
+                    return
+                
+                self.hint = Hint("X-wing in rows: {}".format(cand), cells1, cells2, good_cands, bad_cands, "X-wing rows")
+
+
+
+    def __xw_cols(self, cand: int):
+        coords = self.__get_coords(cand)
+        if len(coords) < 5:
+            return
+
+        strong_links = []
+        for col in range(9):
+            cur_col = [ (r, c) for r, c in coords if c == col ]
+            if len(cur_col) == 2:
+                strong_links.append(cur_col)
+
+        strong_combos = it.combinations(strong_links, 2)
+        for combo in strong_combos:
+            rows = set()
+            for lst in combo:
+                for row, col in lst:
+                    rows.add(row)
+            
+            if len(rows) == 2:
+                cols = set()
+                for lst in combo:
+                    for row, col in lst:
+                        cols.add(col)
+
+                cells1 = []
+                for col in list(cols):
+                    cells1.extend(self.__get_col_coords(col))
+                cells2 = []
+                for row in list(rows):
+                    cells2.extend([coord for coord in self.__get_row_coords(row) if coord not in cells1])
+                
+                good_cands = []
+                for lst in combo:
+                    for row, col in lst:
+                        good_cands.append((row, col, cand))
+                
+                bad_cands = []
+                for row, col in cells2:
+                    if cand in self.game.get_candidates(row, col):
+                        bad_cands.append((row, col, cand))
+                
+                if not bad_cands:
+                    return
+                
+                self.hint = Hint("X-wing in columns: {}".format(cand), cells1, cells2, good_cands, bad_cands, "X-wing columns")
+    
+    def __get_coords(self, cand: int) -> List[Tuple[int,int]]:
+        coords: List[Tuple[int, int]] = []
+        for row in range(9):
+            for col in range(9):
+                if self.game.get_cell(row, col) == 0:
+                    cands = list(self.game.get_candidates(row, col))
+                    if cand in cands:
+                        coords.append((row, col))
+        
+        return coords
 
     def __hidden_pair(self):
         # boxes first
