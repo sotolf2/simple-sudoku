@@ -8,7 +8,7 @@ import itertools as it
 from textwrap import wrap
 from enum import Enum
 import pickle
-from typing import List, Dict, Tuple, Callable
+from typing import List, Dict, Tuple, Callable, Set
 
 
 MARGIN =  20 # Pixels around the board
@@ -140,6 +140,7 @@ class HintEngine(object):
             self.__hidden_quad,
             self.__hidden_triple,
             self.__xwings,
+            self.__skyscrapers,
         ]
 
     def get_hint(self) -> Hint:
@@ -150,6 +151,138 @@ class HintEngine(object):
         
         return self.hint
 
+    def __skyscrapers(self):
+        for cand in range(1,10):
+            self.__skyscraper_rows(cand)
+            if not self.hint is None:
+                return
+
+        for cand in range(1,10):
+            self.__skyscraper_cols(cand)
+
+    def __skyscraper_rows(self, cand: int):
+        coords = self.__get_coords(cand)
+        if len(coords) < 5:
+            return
+
+        strong_links = []
+        for row in range(9):
+            cur_row = [ (r, c) for r, c in coords if r == row ]
+            if len(cur_row) == 2:
+                strong_links.append(cur_row)
+
+        strong_combos = it.combinations(strong_links, 2)
+        for combo in strong_combos:
+            cols = set()
+            for lst in combo:
+                for row, col in lst:
+                    cols.add(col)
+            
+            if len(cols) == 3:
+                rows = set()
+                for lst in combo:
+                    for row, col in lst:
+                        rows.add(row)
+            
+                # Locate base and roof
+                base: List[Tuple[int, int]] = []
+                roof: List[Tuple[int, int]] = []
+                all_coords = []
+                for lst in combo:
+                    for row, col in lst:
+                        all_coords.append((row, col))
+                for coord_pair in it.combinations(all_coords, 2):
+                    if coord_pair[0][1] == coord_pair[1][1]:
+                        base.extend(coord_pair)
+                roof = [coord for coord in all_coords if coord not in base]
+
+                # Find common buddies
+                cells2_set: Set[Tuple[int,int]] = set()
+                coords1 = set(self.__get_buddy_coords(roof[0][0], roof[0][1]))
+                cells2_set = cells2_set.union(set(self.__get_buddy_coords(roof[0][0], roof[0][1])))
+                coords2 = set(self.__get_buddy_coords(roof[1][0], roof[1][1]))
+                cells2_set = cells2_set.union(set(self.__get_buddy_coords(roof[1][0], roof[1][1])))
+                common_coords_set = coords2.intersection(coords1)
+                common_coords_set.difference_update(set(all_coords))
+
+                common_coords = list(common_coords_set)
+                cells1 = []
+                for row in list(rows):
+                    cells1.extend(self.__get_row_coords(row))
+                cells2 = common_coords
+                good_cands: List[Tuple[int, int, int]] = []
+                for row, col in all_coords:
+                    good_cands.append((row, col, cand))
+                bad_cands: List[Tuple[int, int, int]] = []
+                for row, col in common_coords:
+                    if cand in self.game.get_candidates(row, col):
+                        bad_cands.append((row, col, cand))
+                if not bad_cands:
+                    continue
+                self.hint = Hint("Skyscraper rows: {}".format(cand), cells1, cells2, good_cands, bad_cands, "Skyscraper rows")
+
+
+    def __skyscraper_cols(self, cand: int):
+        coords = self.__get_coords(cand)
+        if len(coords) < 5:
+            return
+
+        strong_links = []
+        for col in range(9):
+            cur_col = [ (r, c) for r, c in coords if c == col ]
+            if len(cur_col) == 2:
+                strong_links.append(cur_col)
+
+        strong_combos = it.combinations(strong_links, 2)
+        for combo in strong_combos:
+            rows = set()
+            for lst in combo:
+                for row, col in lst:
+                    rows.add(row)
+            
+            if len(rows) == 3:
+                cols = set()
+                for lst in combo:
+                    for row, col in lst:
+                        cols.add(col)
+            
+                # Locate base and roof
+                base: List[Tuple[int, int]] = []
+                roof: List[Tuple[int, int]] = []
+                all_coords = []
+                for lst in combo:
+                    for row, col in lst:
+                        all_coords.append((row, col))
+                for coord_pair in it.combinations(all_coords, 2):
+                    if coord_pair[0][0] == coord_pair[1][0]:
+                        base.extend(coord_pair)
+                roof = [coord for coord in all_coords if coord not in base]
+
+                # Find common buddies
+                cells2_set: Set[Tuple[int,int]] = set()
+                coords1 = set(self.__get_buddy_coords(roof[0][0], roof[0][1]))
+                cells2_set = cells2_set.union(set(self.__get_buddy_coords(roof[0][0], roof[0][1])))
+                coords2 = set(self.__get_buddy_coords(roof[1][0], roof[1][1]))
+                cells2_set = cells2_set.union(set(self.__get_buddy_coords(roof[1][0], roof[1][1])))
+                common_coords_set = coords2.intersection(coords1)
+                common_coords_set.difference_update(set(all_coords))
+
+                common_coords = list(common_coords_set)
+                cells1 = []
+                for col in list(cols):
+                    cells1.extend(self.__get_col_coords(col))
+                cells2 = common_coords
+                good_cands: List[Tuple[int, int, int]] = []
+                for row, col in all_coords:
+                    good_cands.append((row, col, cand))
+                bad_cands: List[Tuple[int, int, int]] = []
+                for row, col in common_coords:
+                    if cand in self.game.get_candidates(row, col):
+                        bad_cands.append((row, col, cand))
+                if not bad_cands:
+                    continue
+                self.hint = Hint("Skyscraper columns: {}".format(cand), cells1, cells2, good_cands, bad_cands, "Skyscraper colums")
+
     def __xwings(self):
         for cand in range(1,10):
             self.__xw_rows(cand)
@@ -158,8 +291,6 @@ class HintEngine(object):
         
         for cand in range(1,10):
             self.__xw_cols(cand)
-            if not self.hint is None:
-                return
 
     def __xw_rows(self, cand: int):
         coords = self.__get_coords(cand)
@@ -876,6 +1007,18 @@ class HintEngine(object):
                     if i in self.game.get_candidates(row, col):
                         return (True, ((row,col), i))
         return (False, ((0,0), 0))
+
+    def __get_buddy_coords(self, row: int, col: int) -> List[Tuple[int,int]]:
+        coords = set()
+        box_no = self.__get_box(row, col)
+        for coord in self.__get_box_coords(box_no):
+            coords.add(coord)
+        for coord in self.__get_row_coords(row):
+            coords.add(coord)
+        for coord in self.__get_col_coords(col):
+            coords.add(coord)
+
+        return list(coords)
 
     def __get_box_coords(self, box_no: int) -> List[Tuple[int, int]]:
         coords: list = [
