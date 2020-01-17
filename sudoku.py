@@ -31,16 +31,16 @@ class SudokuBoard(object):
     """
     def __init__(self, puzzle_string: str):
         self.__create_board(puzzle_string)
-    
+
     def update(self, puzzle_string: str):
         self.__create_board(puzzle_string)
-    
+
     def get(self) -> List[List[int]]:
         return self.board[:]
 
     def set_board(self, board: List[List[int]]):
         self.board = board
-    
+
     def __create_board(self, puzzle_string: str):
         rows = wrap(puzzle_string, 9)
         rows = [row.replace('.', '0') for row in rows]
@@ -51,11 +51,11 @@ class SudokuBoard(object):
         with open(file_name) as file:
             puzzles = [line.strip() for line in file]
             self.__create_board(random.choice(puzzles)) 
-        
+
         # Rotate puzzle between 0 to 3 times
         for i in range(random.randint(0,3)):
             self.rotate90()
-        
+
         # Either don't flip or do flips
         i = random.randint(0,3)
 
@@ -66,9 +66,9 @@ class SudokuBoard(object):
         elif i == 2:
             self.flip_hor()
             self.flip_vert()
-        
+
         self.translate()
-    
+
     def rotate90(self):
         new_board = [[0 for y in range(9)] for x in range(9)]
         for i in range(9):
@@ -89,7 +89,7 @@ class SudokuBoard(object):
             for j in range(9):
                 new_board[i][8-j] = self.board[i][j]
         self.board = new_board
-        
+
     def translate(self):
         numbers = [1,2,3,4,5,6,7,8,9]
         random.shuffle(numbers)
@@ -101,7 +101,7 @@ class SudokuBoard(object):
                 else:
                     new_board[i][j] = 0
         self.board = new_board
-    
+
     def board_big_as_string(self) -> str:
         puzzle_string = ""
         for row in range(9):
@@ -114,7 +114,7 @@ class SudokuBoard(object):
                     given_str = str(given)
                 puzzle_string += given_str
         return puzzle_string
-    
+
 
 
 Hint = namedtuple('Hint', "technique cells1 cells2 good_cands bad_cands text")
@@ -148,7 +148,7 @@ class HintEngine(object):
             tech()
             if not self.hint is None:
                 break
-        
+
         return self.hint
 
     def __skyscrapers(self):
@@ -177,13 +177,13 @@ class HintEngine(object):
             for lst in combo:
                 for row, col in lst:
                     cols.add(col)
-            
+
             if len(cols) == 3:
                 rows = set()
                 for lst in combo:
                     for row, col in lst:
                         rows.add(row)
-            
+
                 # Locate base and roof
                 base: List[Tuple[int, int]] = []
                 roof: List[Tuple[int, int]] = []
@@ -239,13 +239,13 @@ class HintEngine(object):
             for lst in combo:
                 for row, col in lst:
                     rows.add(row)
-            
+
             if len(rows) == 3:
                 cols = set()
                 for lst in combo:
                     for row, col in lst:
                         cols.add(col)
-            
+
                 # Locate base and roof
                 base: List[Tuple[int, int]] = []
                 roof: List[Tuple[int, int]] = []
@@ -288,7 +288,7 @@ class HintEngine(object):
             self.__xw_rows(cand)
             if not self.hint is None:
                 return
-        
+
         for cand in range(1,10):
             self.__xw_cols(cand)
 
@@ -309,7 +309,7 @@ class HintEngine(object):
             for lst in combo:
                 for row, col in lst:
                     cols.add(col)
-            
+
             if len(cols) == 2:
                 rows = set()
                 for lst in combo:
@@ -322,20 +322,20 @@ class HintEngine(object):
                 cells2 = []
                 for col in list(cols):
                     cells2.extend([coord for coord in self.__get_col_coords(col) if coord not in cells1])
-                
+
                 good_cands = []
                 for lst in combo:
                     for row, col in lst:
                         good_cands.append((row, col, cand))
-                
+
                 bad_cands = []
                 for row, col in cells2:
                     if cand in self.game.get_candidates(row, col):
                         bad_cands.append((row, col, cand))
-                
+
                 if not bad_cands:
                     return
-                
+
                 self.hint = Hint("X-wing in rows: {}".format(cand), cells1, cells2, good_cands, bad_cands, "X-wing rows")
 
 
@@ -357,7 +357,7 @@ class HintEngine(object):
             for lst in combo:
                 for row, col in lst:
                     rows.add(row)
-            
+
             if len(rows) == 2:
                 cols = set()
                 for lst in combo:
@@ -370,22 +370,22 @@ class HintEngine(object):
                 cells2 = []
                 for row in list(rows):
                     cells2.extend([coord for coord in self.__get_row_coords(row) if coord not in cells1])
-                
+
                 good_cands = []
                 for lst in combo:
                     for row, col in lst:
                         good_cands.append((row, col, cand))
-                
+
                 bad_cands = []
                 for row, col in cells2:
                     if cand in self.game.get_candidates(row, col):
                         bad_cands.append((row, col, cand))
-                
+
                 if not bad_cands:
                     return
-                
+
                 self.hint = Hint("X-wing in columns: {}".format(cand), cells1, cells2, good_cands, bad_cands, "X-wing columns")
-    
+
     def __get_coords(self, cand: int) -> List[Tuple[int,int]]:
         coords: List[Tuple[int, int]] = []
         for row in range(9):
@@ -394,13 +394,13 @@ class HintEngine(object):
                     cands = list(self.game.get_candidates(row, col))
                     if cand in cands:
                         coords.append((row, col))
-        
+
         return coords
 
     def __hidden_pair(self):
         # boxes first
         for box_no in range(1,10):
-            coords = self.__get_box_coords(box_no) 
+            coords = self.__get_box_coords(box_no)
             self.__search_hidden_pair(coords)
             if not self.hint is None:
                 return
@@ -410,7 +410,7 @@ class HintEngine(object):
             self.__search_hidden_pair(coords)
             if not self.hint is None:
                 return
-        
+
         for col in range(9):
             coords = self.__get_col_coords(col)
             self.__search_hidden_pair(coords)
@@ -426,7 +426,7 @@ class HintEngine(object):
                 place_cands[coord_set].append(cand)
             else:
                 place_cands[coord_set] = [cand]
-        
+
         for cur_coords_set, cands in place_cands.items():
             if len(cands) == 2:
                 cur_coords = list(cur_coords_set)
@@ -444,11 +444,11 @@ class HintEngine(object):
                         good_cands.append((row, col, cand))
                 self.hint = Hint("Hidden pair {} {}".format(cands[0], cands[1]), cells1, None, good_cands, bad_cands, "Hidden pair")
                 return
-                
+
     def __hidden_triple(self):
         # boxes first
         for box_no in range(1,10):
-            coords = self.__get_box_coords(box_no) 
+            coords = self.__get_box_coords(box_no)
             self.__search_hidden_triple(coords)
             if not self.hint is None:
                 return
@@ -458,7 +458,7 @@ class HintEngine(object):
             self.__search_hidden_triple(coords)
             if not self.hint is None:
                 return
-        
+
         for col in range(9):
             coords = self.__get_col_coords(col)
             self.__search_hidden_triple(coords)
@@ -499,7 +499,7 @@ class HintEngine(object):
                             bad_cands.append((row, col, cand))
                 if not bad_cands:
                     continue
-            
+
                 x,y,z = tuple(combo)
                 self.hint = Hint("Hidden triple {} {} {}".format(x,y,z), cells1, None, good_cands, bad_cands, "Hidden Triple" )
                 return
@@ -507,7 +507,7 @@ class HintEngine(object):
     def __hidden_quad(self):
         # boxes first
         for box_no in range(1,10):
-            coords = self.__get_box_coords(box_no) 
+            coords = self.__get_box_coords(box_no)
             self.__search_hidden_quad(coords)
             if not self.hint is None:
                 return
@@ -517,7 +517,7 @@ class HintEngine(object):
             self.__search_hidden_quad(coords)
             if not self.hint is None:
                 return
-        
+
         for col in range(9):
             coords = self.__get_col_coords(col)
             self.__search_hidden_quad(coords)
@@ -558,7 +558,7 @@ class HintEngine(object):
                             bad_cands.append((row, col, cand))
                 if not bad_cands:
                     continue
-            
+
                 w,x,y,z = tuple(combo)
                 self.hint = Hint("Hidden quad {} {} {} {}".format(w,x,y,z), cells1, None, good_cands, bad_cands, "Hidden Quad" )
                 return
@@ -573,7 +573,7 @@ class HintEngine(object):
                     cand_coord[cand].append(coord)
                 else:
                     cand_coord[cand] = [coord]
-        
+
         return cand_coord
 
 
@@ -611,7 +611,7 @@ class HintEngine(object):
                 self.__create_triple_hint(x,y,z, cells1, cur_coords)
                 if not self.hint is None:
                     return
-        
+
         # Then rows
         for row in range(9):
             coords = self.__get_row_coords(row)
@@ -654,7 +654,7 @@ class HintEngine(object):
         if not bad_cands:
             return
         self.hint = Hint("Naked triple {} {} {}".format(x, y, z), cells1, None, good_cands, bad_cands, "Naked triple")
-    
+
     def __get_triplet_coords(self, triplets: List[Tuple[frozenset, Tuple[int, int]]]) -> Dict[frozenset, List[Tuple[int, int]]]:
         triplet_coords = {}
         combinations = it.combinations(triplets, 3)
@@ -698,7 +698,7 @@ class HintEngine(object):
                 self.__create_quad_hint(x,y,z,a, cells1, cur_coords)
                 if not self.hint is None:
                     return
-        
+
         # Then rows
         for row in range(9):
             coords = self.__get_row_coords(row)
@@ -742,7 +742,7 @@ class HintEngine(object):
         if not bad_cands:
             return
         self.hint = Hint("Naked quad {} {} {} {}".format(x, y, z, a), cells1, None, good_cands, bad_cands, "Naked quad")
-    
+
     def __get_quad_coords(self, quads: List[Tuple[frozenset, Tuple[int, int]]]) -> Dict[frozenset, List[Tuple[int, int]]]:
         quad_coords = {}
         combinations = it.combinations(quads, 4)
@@ -815,7 +815,7 @@ class HintEngine(object):
                     self.__create_pair_hint(x, y, cells1, cur_coords)
                     if not self.hint is None:
                         return
-    
+
     def __create_pair_hint(self, x: int, y: int, cells1: List[Tuple[int, int]], cur_coords: List[Tuple[int, int]]):
         good_cands = [(row, col, x) for row, col in cur_coords] + [(row, col, y) for row, col in cur_coords]
         bad_x = [(row, col, x) for row, col in cells1 if (row, col) not in cur_coords and x in self.game.get_candidates(row, col)]
@@ -832,7 +832,7 @@ class HintEngine(object):
                 pair_coords[pair].append(coord)
             else:
                 pair_coords[pair] = [coord]
-        
+
         return pair_coords
 
     def __box_line_reduction(self):
@@ -860,7 +860,7 @@ class HintEngine(object):
             boxes = set()
             for row, col in cur_coords:
                 boxes.add(self.__get_box(row, col))
-            
+
             # Are all of the candidates in the same box?
             if len(boxes) == 1:
                 # Do we have any candidates to delete in that box
@@ -875,7 +875,7 @@ class HintEngine(object):
                 return
 
 
-            
+
     def __get_box(self, row: int, col: int) -> int:
         box_row = row // 3
         box_col = col // 3
@@ -899,7 +899,7 @@ class HintEngine(object):
 
                 if cur_coords is None:
                     continue
-                
+
                 # Filter out already answered cells
                 # Can only be pointing if 2 or three candidates
                 if len(cur_coords) == 2 or len(cur_coords) == 3:
@@ -951,10 +951,10 @@ class HintEngine(object):
                 if len(cands) == 1 and self.game.get_cell(row, col) == 0:
                     good_cells.append((row,col))
                     good_cands.append((row,col,cands[0]))
-        
+
         if len(good_cells) > 0:
             self.hint = Hint("Naked single", good_cells, None, good_cands, None, "The only number that can go in this cell is")
-    
+
     def __hidden_single(self):
         searches = [
             self.__hs_search_box,
@@ -967,7 +967,7 @@ class HintEngine(object):
                 continue
             else:
                 return
-    
+
     def __hs_search_box(self):
         for box_no in range(1,10):
             coords = self.__get_box_coords(box_no)
@@ -1000,7 +1000,7 @@ class HintEngine(object):
         search_coords = [ (row, col) for row, col in coords if self.game.get_cell(row,col) == 0]
         for row, col in search_coords:
             cnt.update(self.game.get_candidates(row, col))
-        
+
         for i in range(1,10):
             if cnt[i] == 1:
                 for row, col in search_coords:
@@ -1049,7 +1049,7 @@ class HintEngine(object):
         for i in range(9):
             coords.append((row,i))
         return [(row, col) for row, col in coords if self.game.get_cell(row, col) == 0]
-    
+
     def __get_col_coords(self, col: int) -> List[Tuple[int, int]]:
         coords = []
         for i in range(9):
@@ -1090,7 +1090,7 @@ class SudokuGame(object):
                 self.puzzle[i].append(self.start_puzzle[i][j])
         self.board.set_board(self.puzzle)
         self.save_undo_state()
-    
+
     def save_undo_state(self):
         self.undostack.append((deepcopy(self.puzzle), deepcopy(self.start_puzzle), deepcopy(self.candidates),deepcopy(self.colours), deepcopy(self.candidate_colours)))
 
@@ -1120,7 +1120,7 @@ class SudokuGame(object):
             for cand in hint.bad_cands:
                 row, col, cand = cand
                 self.candidate_colours[row][col][cand] = 2
-        
+
         return hint.technique
 
     def undo(self):
@@ -1163,7 +1163,7 @@ class SudokuGame(object):
                     i += 1
             else:
                 i += 1
-        
+
         if puzzle_strs:
             self.start_puzzle = self.__import_2d(puzzle_strs)
         if state_strs:
@@ -1181,31 +1181,31 @@ class SudokuGame(object):
             candstrs = line.split(',')
             result.append([[int(ch) for ch in cands] for cands in candstrs])
         return result
-    
+
     def __import_pms(self, in_strs: List[str]) -> List[List[set]]:
         result = []
         for line in in_strs:
             candstrs = line.split(',')
             result.append([set([int(cand) for cand in cands]) for cands in candstrs])
-        
+
         return result
-        
+
     def __import_2d(self, in_strs: List[str]) -> List[List[int]]:
         result = []
         for line in in_strs:
             line = line.replace(".", "0")
             result.append([int(ch) for ch in line])
-        
+
         return result
 
     def get_state(self) -> str:
         state = ""
         state += "[Puzzle]\n"
         state += self.__str_format_2d(self.start_puzzle)
-        
+
         state += "[State]\n"
         state += self.__str_format_2d(self.puzzle)
-        
+
         state += "[PencilMarks]\n"
         for row in self.candidates:
             rowstr = ",".join(["".join(sorted([str(cand) for cand in list(cands)])) for cands in row])
@@ -1222,7 +1222,7 @@ class SudokuGame(object):
             state += rowstr
 
         return state
-    
+
     def __str_format_2d(self, board: List[List[int]]) -> str:
         result = ""
         for row in board:
@@ -1239,14 +1239,14 @@ class SudokuGame(object):
 
     def get_cell(self, row: int, col: int) -> int:
         return self.puzzle[row][col]
-    
+
     def set_cell(self, row: int, col: int, val: int, undo=True):
         self.puzzle[row][col] = val
         self.candidates[row][col] = set()
         self.update_candidates(row, col, undo=False)
         if undo:
             self.save_undo_state()
-    
+
     def calculate_all_candidates(self):
         for row in range(9):
             for col in range(9):
@@ -1258,28 +1258,28 @@ class SudokuGame(object):
             candidates = list(set(range(10)).difference(self.__set_buddies(row, col)))
             for candidate in candidates:
                 self.add_candidate(row, col, candidate, undo=False)
-        
+
         if undo:
             self.save_undo_state()
 
 
     def get_candidates(self, row: int, col: int) -> List[int]:
         return list(self.candidates[row][col])
-    
+
     def get_candidate_set(self, row: int, col: int) -> List[int]:
         return self.candidates
-    
+
     def get_cell_colour(self, row: int, col: int) -> str:
         return COLOURS[self.colours[row][col]]
-    
+
     def get_candidate_colour(self, row: int, col: int, candidate: int) -> str:
         return COLOURS[self.candidate_colours[row][col][candidate]]
-    
+
     def set_candidate_colour(self, row: int, col: int, candidate: int, colour_number: int, undo=True):
         self.candidate_colours[row][col][candidate] = colour_number
         if undo:
             self.save_undo_state()
-    
+
     def set_cell_colour(self, row: int, col: int, colour_number: int, undo=True):
         self.colours[row][col] = colour_number
         if undo:
@@ -1297,20 +1297,20 @@ class SudokuGame(object):
     def reset_colours(self):
         self.colours = [[0 for i in range(9)] for j in range(9)]
         self.candidate_colours = [[[0 for x in range(10)] for y in range(9)] for z in range(9)]
-    
+
     def remove_candidate(self, row: int, col: int, val: int, undo=True):
         self.candidates[row][col].discard(val)
         if undo:
             self.save_undo_state()
-    
+
     def add_candidate(self, row: int, col: int, val: int, undo=True):
         self.candidates[row][col].add(val)
-        if undo:    
+        if undo:
             self.save_undo_state()
 
     def get_origin(self, row: int, col: int) -> int:
         return self.start_puzzle[row][col]
-    
+
     def get_puzzle_string(self) -> str:
         self.board.set_board(self.start_puzzle)
         return self.board.board_big_as_string()
@@ -1329,8 +1329,8 @@ class SudokuGame(object):
             for col in range(9):
                 new_row[col] = [int(char) for char in row_str[col]]
             tmp_cands.append(new_row)
-            
-            
+
+
         for row in range(9):
             for col in range(9):
                 cur_cands = tmp_cands[row][col]
@@ -1338,7 +1338,7 @@ class SudokuGame(object):
                     new_origin[row][col] = cur_cands[0]
                 else:
                     new_candidates[row][col].update(set(cur_cands))
-        
+
         self.start_puzzle = new_origin
         self.puzzle = new_origin
         self.candidates = new_candidates
@@ -1355,7 +1355,7 @@ class SudokuGame(object):
                     candidates[row][col] = [cur]
                 else:
                     candidates[row][col] = self.get_candidates(row, col)
-                
+
                 width = len(candidates[row][col])
                 if width > col_widths[col]:
                     col_widths[col] = width
@@ -1373,7 +1373,7 @@ class SudokuGame(object):
         header += spacing
         header += "."
         header += "\n"
-        
+
         footer = "'"
         footer += "-" * (col_widths[0] + col_widths[1] + col_widths[2])
         footer += spacing
@@ -1412,7 +1412,7 @@ class SudokuGame(object):
         forum_string += footer
 
         return forum_string
-    
+
     def __cand_row_to_string(self, cands: List[List[int]], col_widths: List[int]) -> str:
         candstrings = ["".join(["".join(str(cand2)) for cand2 in cand]) for cand in cands]
 
@@ -1451,7 +1451,7 @@ class SudokuGame(object):
             self.save_undo_state()
 
     def __find_buddies(self, row: int, col: int) -> List[Tuple[int, int]]:
-        buddies = [] 
+        buddies = []
         # Row buddies
         buddies.extend([(row, c) for c in range(9)])
         # Column buddies
@@ -1474,13 +1474,13 @@ class SudokuGame(object):
             for j in range(9):
                 self.start_puzzle[i].append(self.puzzle[i][j])
         self.save_undo_state()
-    
+
     def null_board(self):
         for i in range(9):
             for j in range(9):
                 self.start_puzzle[i][j] = 0
         self.start()
-                
+
     def load_puzzle(self, file_name: str, line_number: int):
         with open(file_name) as file:
             puzzles = [line.strip() for line in file]
@@ -1491,7 +1491,7 @@ class SudokuGame(object):
         self.board.generate(difficulty)
         self.start_puzzle = self.board.get()
         self.start()
-    
+
     def rotate90(self):
         self.board.rotate90()
         self.start_puzzle = self.board.get()
@@ -1523,7 +1523,7 @@ class SudokuGame(object):
         self.start_puzzle = self.board.get()
         self.start()
         self.save_undo_state()
-    
+
     def check_win(self) -> bool:
         for row in range(9):
             if not self.__check_row(row):
@@ -1551,7 +1551,7 @@ class SudokuGame(object):
         return self.__check_group(
             [self.puzzle[row][col] for row in range(9)]
         )
-    
+
     def __set_column(self, col: int) -> set:
         return set([self.puzzle[row][col] for row in range(9)])
 
@@ -1563,7 +1563,7 @@ class SudokuGame(object):
                 for c in range(col * 3, (col + 1) * 3)
             ]
         )
-    
+
     def __set_square(self, box_row: int, box_col: int) -> set:
         return set(
             [
@@ -1572,11 +1572,11 @@ class SudokuGame(object):
                 for c in range(box_col * 3, (box_col + 1) * 3)
             ]
         )
-    
+
     def __set_buddies(self, row: int, col: int) -> set:
         return self.__set_row(row).union(self.__set_column(col), self.__set_square(row // 3, col // 3))
 
-    
+
 class SudokuUI(tk.Frame):
     """
     The Tkinter UI, responsible for drawing the board and accepting user input.
@@ -1654,23 +1654,25 @@ class SudokuUI(tk.Frame):
         self.__draw_puzzle()
         self.__draw_cursor()
         self.canvas.focus_set()
-        
+
         self.canvas.bind("<Left>", self.__cursor_left)
         self.canvas.bind("<Right>", self.__cursor_right)
         self.canvas.bind("<Up>", self.__cursor_up)
         self.canvas.bind("<Down>", self.__cursor_down)
-        
+
         self.canvas.bind("<a>", self.__cursor_left)
         self.canvas.bind("<d>", self.__cursor_right)
         self.canvas.bind("<w>", self.__cursor_up)
         self.canvas.bind("<s>", self.__cursor_down)
-        
+
         self.canvas.bind("<u>", self.__undo)
         self.canvas.bind("<q>", self.__toggle_mode_colouring)
         self.canvas.bind("<e>", self.__erase_colouring)
         self.canvas.bind("<f>", self.__toggle_mode_colour_candidate)
         self.canvas.bind("<c>", self.__calculate_candidates)
         self.canvas.bind("<h>", self.__hint)
+
+        self.canvas.bind("<Control-v>", self.__from_clip)
 
         self.canvas.bind("<F1>", self.__toggle_highlight)
         self.canvas.bind("<F2>", self.__toggle_highlight)
@@ -1685,7 +1687,7 @@ class SudokuUI(tk.Frame):
         self.canvas.bind("<Button-1>", self.__cell_clicked)
         self.canvas.bind("<Key>", self.__key_pressed)
         self.canvas.bind("<Configure>", self.__canvas_resize)
-    
+
     def __erase_colouring(self, event):
         self.game.reset_colours()
         self.technique = ""
@@ -1695,7 +1697,7 @@ class SudokuUI(tk.Frame):
         self.technique = self.game.hint()
         self.highlight = 0
         self.__draw_puzzle()
-    
+
     def __autofill_naked_singles(self):
         hint = HintEngine(self.game).get_naked()
         if hint is None:
@@ -1705,7 +1707,7 @@ class SudokuUI(tk.Frame):
                 self.game.set_cell(row, col, val, undo=False)
 
         self.__draw_puzzle()
-    
+
     def __undo(self, event):
         self.game.undo()
         self.__draw_puzzle()
@@ -1784,7 +1786,7 @@ class SudokuUI(tk.Frame):
             self.puzzle_num = in_num - 1
             self.game.load_puzzle(self.file_name, self.puzzle_num)
             self.__draw_puzzle()
-        
+
     def __previous_puzzle(self):
         if self.puzzle_num != 0:
             self.puzzle_num -= 1
@@ -1799,7 +1801,7 @@ class SudokuUI(tk.Frame):
     def __random_from_file(self):
         self.game.load_random_puzzle(self.file_name)
         self.__draw_puzzle()
-    
+
     def __calculate_candidates(self, event=None):
         self.game.calculate_all_candidates()
         self.__draw_puzzle()
@@ -1810,7 +1812,7 @@ class SudokuUI(tk.Frame):
             self.highlight = 0
         else:
             self.highlight = number
-        
+
         self.__draw_puzzle()
 
     def __null_board(self):
@@ -1821,11 +1823,11 @@ class SudokuUI(tk.Frame):
         self.game.current_to_origin()
         self.__draw_puzzle()
 
-    def __from_clip(self):
+    def __from_clip(self, event=None):
         puzzle_string = self.clipboard_get()
         self.game.from_string(puzzle_string)
         self.__draw_puzzle()
-    
+
     def __export_givens_clip(self):
         self.clipboard_clear()
         self.clipboard_append(self.game.get_puzzle_string())
@@ -1871,7 +1873,7 @@ class SudokuUI(tk.Frame):
             x1 = self.width - self.margin
             y1 = self.margin + i * self.side
             self.canvas.create_line(x0, y0, x1, y1, fill=color, width=1, tags="grid")
-    
+
     def __draw_puzzle(self):
         self.canvas.delete("numbers")
         self.canvas.delete("candidates")
@@ -1894,7 +1896,7 @@ class SudokuUI(tk.Frame):
                 if self.highlight == 0 or self.mode is Mode.colour_candidate:
                     do_highlight = False
 
-                if do_highlight and answer == self.highlight: 
+                if do_highlight and answer == self.highlight:
                     self.canvas.create_rectangle(x0, y0, x1, y1, tags="highlights", fill=HLANSWER, outline=HLANSWER)
                 elif do_highlight and self.highlight in candidates and answer == 0:
                     self.canvas.create_rectangle(x0, y0, x1, y1, tags="highlights", fill=HLCAND, outline=HLCAND)
@@ -1903,7 +1905,7 @@ class SudokuUI(tk.Frame):
                 colour = self.game.get_cell_colour(i,j)
                 if not colour is None and answer == 0:
                     self.canvas.create_rectangle(x0, y0, x1, y1, tags="cellcolouring", fill=colour , outline=colour)
-                
+
                 if answer != 0:
                     # Draw big character
                     x = self.margin + j * self.side + self.side / 2
@@ -1918,7 +1920,7 @@ class SudokuUI(tk.Frame):
                     # Draw candidates
                     for candidate in candidates:
                         self.__draw_candidate(i, j, candidate)
-        
+
         # Write puzzle info in the middle bottom of the puzzle
         pix = self.width / 2
         piy = self.height - self.margin / 2
@@ -1936,7 +1938,7 @@ class SudokuUI(tk.Frame):
         puzzle_info = "Hint: {}".format(self.technique)
         if self.technique != "":
             self.canvas.create_text(pix, piy, text=puzzle_info, tags="hint", fill="gray", font=("Arial", 12))
-        
+
         # If we're autosolving singles, check once more
         if self.autosolve_naked_singles.get():
             self.__autofill_naked_singles()
@@ -1949,7 +1951,7 @@ class SudokuUI(tk.Frame):
             x = cx - diff
             y = cy - diff
         elif candidate == 2:
-            x = cx 
+            x = cx
             y = cy - diff
         elif candidate == 3:
             x = cx + diff
@@ -1991,7 +1993,7 @@ class SudokuUI(tk.Frame):
         y0 = y - diff
         y1 = y + diff
         self.canvas.create_oval(x0, y0, x1, y1, tags="candidatecolour", fill=colour, outline=colour)
-    
+
     def __clear_answers(self):
         self.game.start()
         self.canvas.delete("victory")
@@ -2029,7 +2031,7 @@ class SudokuUI(tk.Frame):
             else:
                 self.col -= 1
         self.__draw_cursor()
-    
+
     def __cursor_right(self, event):
         self.canvas.delete("cursor")
         if self.__deselected():
@@ -2121,7 +2123,7 @@ class SudokuUI(tk.Frame):
             self.__draw_puzzle()
             self.__draw_cursor()
             return
-    
+
     def __toggle_mode_candidate(self):
         if self.mode is Mode.candidate:
             self.mode = Mode.solution
@@ -2137,7 +2139,7 @@ class SudokuUI(tk.Frame):
             self.mode = Mode.colour
         self.__draw_cursor()
         self.__draw_puzzle()
-    
+
     def __toggle_mode_colour_candidate(self, event):
         if self.mode is Mode.colour_candidate:
             self.mode = Mode.solution
